@@ -1,0 +1,106 @@
+{
+  "project": {
+    "name": "absensi-dashboard",
+    "framework": "React",
+    "bundler": "Vite",
+    "language": "TypeScript",
+    "state_management": "Zustand"
+  },
+  "structure": {
+    "src": {
+      "app": {
+        "description": "Core app setup (routing, providers, global contexts)",
+        "files": ["App.tsx", "routes.tsx", "providers.tsx"]
+      },
+      "features": {
+        "auth": {
+          "components": ["LoginForm.tsx"],
+          "pages": ["LoginPage.tsx"],
+          "services": ["authApi.ts"],
+          "types": ["auth.ts"]
+        },
+        "dashboard": {
+          "components": ["StatsCard.tsx", "Chart.tsx"],
+          "pages": ["DashboardPage.tsx"]
+        },
+        "pegawai": {
+          "components": ["PegawaiTable.tsx", "PegawaiForm.tsx"],
+          "pages": ["ListPage.tsx", "DetailPage.tsx"],
+          "services": ["pegawaiApi.ts"],
+          "types": ["pegawai.ts"]
+        },
+        "skpd": {
+          "components": ["SkpdTable.tsx"],
+          "pages": ["ListPage.tsx", "DetailPage.tsx"],
+          "services": ["skpdApi.ts"],
+          "types": ["skpd.ts"]
+        },
+        "lokasi": {
+          "components": ["LokasiTable.tsx", "LokasiForm.tsx"],
+          "pages": ["ListPage.tsx", "CreatePage.tsx", "EditPage.tsx", "DetailPage.tsx"],
+          "services": ["lokasiApi.ts"],
+          "types": ["lokasi.ts"]
+        },
+        "kegiatan": {
+          "components": ["KegiatanTable.tsx", "KegiatanForm.tsx"],
+          "pages": ["ListPage.tsx", "CreatePage.tsx", "EditPage.tsx", "DetailPage.tsx"],
+          "services": ["kegiatanApi.ts"],
+          "types": ["kegiatan.ts"]
+        },
+        "presensi": {
+          "components": ["PresensiTable.tsx"],
+          "pages": ["ListPage.tsx", "DetailPage.tsx"],
+          "services": ["presensiApi.ts"],
+          "types": ["presensi.ts"]
+        },
+        "jam-dinas": {
+          "pages": ["KelolaJamDinasPage.tsx", "JamDinasPerOrganisasiPage.tsx"],
+          "services": ["jamDinasApi.ts"],
+          "types": ["jamDinas.ts"]
+        },
+        "pengaturan": {
+          "pages": ["GeneralSettingPage.tsx", "AccountSettingPage.tsx"],
+          "services": ["settingApi.ts"],
+          "types": ["setting.ts"]
+        }
+      },
+      "components": {
+        "ui": ["Button.tsx", "Table.tsx", "Modal.tsx", "Input.tsx", "Select.tsx"],
+        "layout": ["AppShell.tsx", "Sidebar.tsx", "Navbar.tsx", "Footer.tsx"]
+      },
+      "store": {
+        "authStore.ts": "State for authentication & user role",
+        "sidebarStore.ts": "Sidebar open/close state + menu getter",
+        "uiStore.ts": "Optional UI global states (theme, modal, etc.)"
+      },
+      "hooks": ["useAuth.ts", "useSidebar.ts", "useFetch.ts"],
+      "services": ["axiosInstance.ts", "interceptors.ts"],
+      "types": ["global.ts"],
+      "utils": ["dateFormatter.ts", "validators.ts", "roleGuard.ts"],
+      "assets": ["images/", "icons/", "fonts/"]
+    }
+  },
+  "roles": {
+    "super_admin": {
+      "sidebar_menu": [
+        "Dashboard",
+        "Pegawai",
+        "SKPD",
+        "Lokasi",
+        "Kegiatan",
+        "Presensi",
+        { "Jam Dinas": ["Kelola Jam Dinas", "Jam Dinas per Organisasi"] },
+        "Pengaturan"
+      ]
+    },
+    "admin": {
+      "sidebar_menu": [
+        "Dashboard",
+        "Pegawai",
+        "SKPD",
+        "Lokasi",
+        "Presensi"
+      ]
+    }
+  }
+}

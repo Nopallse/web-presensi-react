@@ -1,0 +1,117 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Form, Input, Button, Alert } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { useAuthActions } from '../../../store/authStore';
+import { useUIStore } from '../../../store/uiStore';
+
+interface LoginFormData {
+  username: string;
+  password: string;
+}
+
+const LoginForm: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuthActions();
+  const { showToast } = useUIStore();
+  const [form] = Form.useForm();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (values: LoginFormData) => {
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await login(values.username, values.password);
+      
+      showToast({
+        message: 'Login berhasil! Selamat datang.',
+        type: 'success'
+      });
+
+      // Navigate to intended page or dashboard
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
+    } catch (error: any) {
+      let errorMessage = 'Login gagal. Silakan coba lagi.';
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Form
+      form={form}
+      name="login"
+      onFinish={handleSubmit}
+      layout="vertical"
+      size="large"
+      initialValues={{
+        username: '',
+        password: ''
+      }}
+    >
+      {error && (
+        <Alert
+          message={error}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      <Form.Item
+        label="Username"
+        name="username"
+        rules={[
+          { required: true, message: 'Username harus diisi!' }
+        ]}
+      >
+        <Input
+          prefix={<UserOutlined />}
+          placeholder="Masukkan username"
+          disabled={isSubmitting}
+        />
+      </Form.Item>
+
+      <Form.Item
+        label="Password"
+        name="password"
+        rules={[
+          { required: true, message: 'Password harus diisi!' }
+        ]}
+      >
+        <Input.Password
+          prefix={<LockOutlined />}
+          placeholder="Masukkan password"
+          disabled={isSubmitting}
+        />
+      </Form.Item>
+
+      <Form.Item>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          block
+        >
+          {isSubmitting ? 'Masuk...' : 'Login'}
+        </Button>
+      </Form.Item>
+    </Form>
+  );
+};
+
+export default LoginForm;
