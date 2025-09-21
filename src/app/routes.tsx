@@ -9,6 +9,19 @@ import LoginPage from '../features/auth/pages/LoginPage';
 // Dashboard
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 
+// Pegawai
+import { PegawaiPage } from '../features/pegawai';
+
+// SKPD  
+import { SKPDPage } from '../features/skpd';
+
+// Lokasi
+import LokasiPage from '../features/lokasi/pages/LokasiPage';
+import LokasiDetail from '../features/lokasi/pages/LokasiDetail';
+import LokasiCreate from '../features/lokasi/pages/LokasiCreate';
+import LokasiEdit from '../features/lokasi/pages/LokasiEdit';
+
+import { KegiatanPage, KegiatanDetail, KegiatanCreate, KegiatanEdit } from '../features/kegiatan';
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -60,7 +73,7 @@ const AppRoutes: React.FC = () => {
           path="/pegawai"
           element={
             <ProtectedRoute>
-              <div>Pegawai List Page (Coming Soon)</div>
+              <PegawaiPage />
             </ProtectedRoute>
           }
         />
@@ -78,7 +91,7 @@ const AppRoutes: React.FC = () => {
           path="/skpd"
           element={
             <ProtectedRoute>
-              <div>SKPD List Page (Coming Soon)</div>
+              <SKPDPage />
             </ProtectedRoute>
           }
         />
@@ -96,7 +109,7 @@ const AppRoutes: React.FC = () => {
           path="/lokasi"
           element={
             <ProtectedRoute>
-              <div>Lokasi List Page (Coming Soon)</div>
+              <LokasiPage />
             </ProtectedRoute>
           }
         />
@@ -104,7 +117,7 @@ const AppRoutes: React.FC = () => {
           path="/lokasi/create"
           element={
             <ProtectedRoute>
-              <div>Lokasi Create Page (Coming Soon)</div>
+              <LokasiCreate />
             </ProtectedRoute>
           }
         />
@@ -112,7 +125,7 @@ const AppRoutes: React.FC = () => {
           path="/lokasi/:id"
           element={
             <ProtectedRoute>
-              <div>Lokasi Detail Page (Coming Soon)</div>
+              <LokasiDetail />
             </ProtectedRoute>
           }
         />
@@ -120,7 +133,7 @@ const AppRoutes: React.FC = () => {
           path="/lokasi/:id/edit"
           element={
             <ProtectedRoute>
-              <div>Lokasi Edit Page (Coming Soon)</div>
+              <LokasiEdit />
             </ProtectedRoute>
           }
         />
@@ -130,7 +143,7 @@ const AppRoutes: React.FC = () => {
           path="/kegiatan"
           element={
             <ProtectedRoute>
-              <div>Kegiatan List Page (Coming Soon)</div>
+              <KegiatanPage />
             </ProtectedRoute>
           }
         />
@@ -138,7 +151,7 @@ const AppRoutes: React.FC = () => {
           path="/kegiatan/create"
           element={
             <ProtectedRoute>
-              <div>Kegiatan Create Page (Coming Soon)</div>
+              <KegiatanCreate />
             </ProtectedRoute>
           }
         />
@@ -146,7 +159,7 @@ const AppRoutes: React.FC = () => {
           path="/kegiatan/:id"
           element={
             <ProtectedRoute>
-              <div>Kegiatan Detail Page (Coming Soon)</div>
+              <KegiatanDetail />
             </ProtectedRoute>
           }
         />
@@ -154,7 +167,7 @@ const AppRoutes: React.FC = () => {
           path="/kegiatan/:id/edit"
           element={
             <ProtectedRoute>
-              <div>Kegiatan Edit Page (Coming Soon)</div>
+              <KegiatanEdit />
             </ProtectedRoute>
           }
         />

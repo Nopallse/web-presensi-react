@@ -28,7 +28,7 @@ const buttonSizes = {
 
 const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
-  size = 'md',
+  size = 'lg',
   isLoading = false,
   leftIcon,
   rightIcon,

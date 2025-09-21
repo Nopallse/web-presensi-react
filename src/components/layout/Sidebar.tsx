@@ -78,6 +78,9 @@ const Sidebar: React.FC = () => {
   const { isCollapsed } = useSidebar();
   const { toggle } = useSidebarActions();
 
+  // Debug logging
+  console.log('Sidebar render - isCollapsed:', isCollapsed);
+
   // Get current path for menu selection
   const currentPath = location.pathname;
   const selectedKeys = [currentPath.split('/')[1] || 'dashboard'];
@@ -87,6 +90,11 @@ const Sidebar: React.FC = () => {
     if (item) {
       navigate(item.path);
     }
+  };
+
+  const handleToggle = () => {
+    console.log('Sidebar toggle clicked, current state:', isCollapsed);
+    toggle();
   };
 
   return (
@@ -147,7 +155,7 @@ const Sidebar: React.FC = () => {
         <Button
           type="text"
           icon={isCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={toggle}
+          onClick={handleToggle}
           style={{
             width: '32px',
             height: '32px',
@@ -201,12 +209,14 @@ const Sidebar: React.FC = () => {
         style={{
           border: 'none',
           height: 'calc(100vh - 64px - 80px)',
-          paddingTop: '8px'
+          paddingTop: '8px',
+          background: 'transparent'
         }}
+        theme="light"
         items={menuItems.map(item => ({
           key: item.key,
           icon: item.icon,
-          label: item.label
+          label: <span style={{ color: '#262626' }}>{item.label}</span>
         }))}
       />
     </Sider>

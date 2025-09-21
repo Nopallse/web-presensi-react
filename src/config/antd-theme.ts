@@ -153,8 +153,12 @@ export const antdTheme: ThemeConfig = {
     },
     Layout: {
       colorBgHeader: '#ffffff',
-      colorBgBody: '#f8fafc',
-      colorBgTrigger: '#ffffff',
+      bodyBg: '#f8fafc',
+      triggerBg: '#ffffff',
+    },
+    Tooltip: {
+      colorBgSpotlight: 'rgba(0, 0, 0, 0.85)',
+      colorTextLightSolid: '#ffffff',
     },
   },
 };

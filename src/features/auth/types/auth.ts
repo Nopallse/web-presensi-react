@@ -27,15 +27,14 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   user: {
-    id: string;
+    id: number;
     username: string;
     email: string;
     level: string;
     status: string;
-    device_id?: string;
+    device_id?: string | null;
   };
-  admin_opd?: AdminOpd;
-  admin_upt?: AdminUpt;
+  admin_opd?: AdminOpd | null;
 }
 
 export interface RefreshTokenRequest {

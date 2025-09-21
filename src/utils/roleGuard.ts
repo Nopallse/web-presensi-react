@@ -19,7 +19,7 @@ export const roleGuard = {
 
   // Check if user can access a specific feature
   canAccess: (userRole: Role, feature: string): boolean => {
-    const permissions = {
+    const permissions: Record<Role, string[]> = {
       super_admin: [
         'dashboard',
         'pegawai',
@@ -35,6 +35,16 @@ export const roleGuard = {
         'pegawai',
         'skpd',
         'lokasi',
+        'presensi'
+      ],
+      'admin-opd': [
+        'dashboard',
+        'pegawai',
+        'presensi'
+      ],
+      'admin-upt': [
+        'dashboard',
+        'pegawai',
         'presensi'
       ]
     };
@@ -68,6 +78,16 @@ export const roleGuard = {
         { label: 'SKPD', path: '/skpd', icon: 'Building' },
         { label: 'Lokasi', path: '/lokasi', icon: 'MapPin' },
         { label: 'Presensi', path: '/presensi', icon: 'Clock' }
+      ],
+      'admin-opd': [
+        { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
+        { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
+        { label: 'Presensi', path: '/presensi', icon: 'Clock' }
+      ],
+      'admin-upt': [
+        { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
+        { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
+        { label: 'Presensi', path: '/presensi', icon: 'Clock' }
       ]
     };
 
@@ -76,27 +96,33 @@ export const roleGuard = {
 
   // Check if user can perform CRUD operations
   canCreate: (userRole: Role, resource: string): boolean => {
-    const createPermissions = {
+    const createPermissions: Record<Role, string[]> = {
       super_admin: ['pegawai', 'skpd', 'lokasi', 'kegiatan', 'jam-dinas'],
-      admin: ['pegawai', 'lokasi']
+      admin: ['pegawai', 'lokasi'],
+      'admin-opd': [],
+      'admin-upt': []
     };
 
     return createPermissions[userRole]?.includes(resource) || false;
   },
 
   canEdit: (userRole: Role, resource: string): boolean => {
-    const editPermissions = {
+    const editPermissions: Record<Role, string[]> = {
       super_admin: ['pegawai', 'skpd', 'lokasi', 'kegiatan', 'jam-dinas', 'pengaturan'],
-      admin: ['pegawai', 'lokasi']
+      admin: ['pegawai', 'lokasi'],
+      'admin-opd': [],
+      'admin-upt': []
     };
 
     return editPermissions[userRole]?.includes(resource) || false;
   },
 
   canDelete: (userRole: Role, resource: string): boolean => {
-    const deletePermissions = {
+    const deletePermissions: Record<Role, string[]> = {
       super_admin: ['pegawai', 'skpd', 'lokasi', 'kegiatan'],
-      admin: ['pegawai', 'lokasi']
+      admin: ['pegawai', 'lokasi'],
+      'admin-opd': [],
+      'admin-upt': []
     };
 
     return deletePermissions[userRole]?.includes(resource) || false;

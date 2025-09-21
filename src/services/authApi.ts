@@ -1,26 +1,26 @@
 import { apiClient } from './apiService';
 
 interface AdminOpd {
-  id: string;
-  username: string;
-  email: string;
-  nama: string;
-  skpd: string;
-}
-
-interface AdminUpt {
-  id: string;
-  username: string;
-  email: string;
-  nama: string;
-  upt: string;
+  admopd_id: string;
+  id_skpd: string;
+  id_satker: string;
+  id_bidang: string;
+  kategori: string;
 }
 
 interface LoginResponse {
+  message: string;
   accessToken: string;
   refreshToken: string;
-  adminOpd?: AdminOpd;
-  adminUpt?: AdminUpt;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    level: string;
+    status: string;
+    device_id?: string | null;
+  };
+  admin_opd?: AdminOpd | null;
 }
 
 interface RefreshTokenResponse {

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { roleGuard } from '../utils/roleGuard';
 import type { MenuItem, Role } from '../types/global';
 
@@ -19,37 +20,47 @@ interface SidebarActions {
 
 type SidebarStore = SidebarState & SidebarActions;
 
-export const useSidebarStore = create<SidebarStore>((set) => ({
-  // State
-  isOpen: true,
-  isCollapsed: false,
-  activeMenu: '',
+export const useSidebarStore = create<SidebarStore>()(
+  persist(
+    (set) => ({
+      // State
+      isOpen: true,
+      isCollapsed: false,
+      activeMenu: '',
 
-  // Actions
-  toggle: () => {
-    set((state) => ({ isOpen: !state.isOpen }));
-  },
+      // Actions
+      toggle: () => {
+        set((state) => ({ isCollapsed: !state.isCollapsed }));
+      },
 
-  open: () => {
-    set({ isOpen: true });
-  },
+      open: () => {
+        set({ isOpen: true, isCollapsed: false });
+      },
 
-  close: () => {
-    set({ isOpen: false });
-  },
+      close: () => {
+        set({ isOpen: false });
+      },
 
-  setCollapsed: (isCollapsed: boolean) => {
-    set({ isCollapsed });
-  },
+      setCollapsed: (isCollapsed: boolean) => {
+        set({ isCollapsed });
+      },
 
-  setActiveMenu: (activeMenu: string) => {
-    set({ activeMenu });
-  },
+      setActiveMenu: (activeMenu: string) => {
+        set({ activeMenu });
+      },
 
-  getMenuItems: (userRole: Role) => {
-    return roleGuard.getMenuForRole(userRole);
-  }
-}));
+      getMenuItems: (userRole: Role) => {
+        return roleGuard.getMenuForRole(userRole);
+      }
+    }),
+    {
+      name: 'sidebar-storage',
+      partialize: (state) => ({
+        isCollapsed: state.isCollapsed,
+      })
+    }
+  )
+);
 
 // Selectors for easier usage
 export const useSidebar = () => {

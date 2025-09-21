@@ -50,8 +50,6 @@ code {
 }
 
 .ant-layout-content {
-  margin: 24px 16px;
-  padding: 24px;
   background: #fff;
   border-radius: 8px;
 }
@@ -68,4 +66,91 @@ code {
   align-items: center;
   justify-content: center;
   z-index: 9999;
+}
+
+/* Sidebar Menu Overrides */
+.ant-menu-light {
+  background: transparent;
+}
+
+.ant-menu-light .ant-menu-item {
+  color: #262626 !important;
+}
+
+.ant-menu-light .ant-menu-item:not(.ant-menu-item-selected):hover {
+  color: #0ea5e9 !important;
+}
+
+.ant-menu-light .ant-menu-item-selected {
+  background-color: #e6f4ff !important;
+  color: #0ea5e9 !important;
+}
+
+.ant-menu-light .ant-menu-item-icon {
+  color: inherit !important;
+}
+
+.ant-menu-light .ant-menu-item::after {
+  border-right-color: #0ea5e9 !important;
+}
+
+/* Tooltip Fixes */
+.ant-tooltip {
+  z-index: 1060 !important;
+}
+
+.ant-tooltip-inner {
+  background-color: rgb(255, 255, 255) !important;
+  color: #000000 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 6px 8px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+.ant-tooltip-arrow {
+  display: none !important;
+}
+
+.ant-tooltip.ant-tooltip-placement-top .ant-tooltip-arrow,
+.ant-tooltip.ant-tooltip-placement-topLeft .ant-tooltip-arrow,
+.ant-tooltip.ant-tooltip-placement-topRight .ant-tooltip-arrow {
+  border-top-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.ant-tooltip.ant-tooltip-placement-bottom .ant-tooltip-arrow,
+.ant-tooltip.ant-tooltip-placement-bottomLeft .ant-tooltip-arrow,
+.ant-tooltip.ant-tooltip-placement-bottomRight .ant-tooltip-arrow {
+  border-bottom-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* Table Row Hover Fixes */
+.ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5 !important;
+}
+
+.ant-table-tbody > tr:hover > td .ant-btn {
+  color: #0ea5e9 !important;
+}
+
+.ant-table-tbody > tr:hover > td .ant-btn:hover {
+  color: #0284c7 !important;
+  background-color: #f0f9ff !important;
+}
+
+/* Button in table cell styling */
+.ant-table .ant-btn-text {
+  color: #0ea5e9 !important;
+  padding: 4px 8px !important;
+}
+
+.ant-table .ant-btn-text:hover {
+  color: #0284c7 !important;
+  background-color: #f0f9ff !important;
+}
+
+.ant-table .ant-btn-text:focus {
+  color: #0284c7 !important;
+  background-color: #f0f9ff !important;
 }

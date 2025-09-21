@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types/global';
 import { authApi } from '../services/authApi';
+import { isInvalidRefreshTokenError } from '../utils/authUtils';
+import { resetInterceptorState } from '../services/interceptors';
+import { useEffect } from 'react';
 
 interface AuthState {
   user: User | null;
@@ -21,6 +24,8 @@ interface AuthActions {
   setError: (error: string | null) => void;
   clearError: () => void;
   refreshAccessToken: () => Promise<void>;
+  fetchUserProfile: () => Promise<void>;
+  verifyAndRecoverUser: () => Promise<boolean>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
@@ -45,19 +50,45 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const response = await authApi.login(username, password);
           
+          // Validate level - only accept 1, 2, or 3
+          const validLevels = ['1', '2', '3'];
+          if (!validLevels.includes(response.user.level)) {
+            set({
+              isLoading: false,
+              error: 'Level akses tidak valid. Akses ditolak.'
+            });
+            throw new Error('Level akses tidak valid');
+          }
+          
+          // Map level to role based on the login response
+          const mapLevelToRole = (level: string): 'super_admin' | 'admin' | 'admin-opd' | 'admin-upt' => {
+            switch (level) {
+              case '1':
+                return 'super_admin';
+              case '2':
+              case '3':
+                // If admin_opd exists, it's admin-opd, otherwise regular admin
+                if (response.admin_opd) return 'admin-opd';
+                return 'admin';
+              default:
+                throw new Error('Level tidak valid'); // This shouldn't happen due to validation above
+            }
+          };
+
+          const role = mapLevelToRole(response.user.level);
+          
           // Map the API response to our User type
           const user: User = {
-            id: response.adminOpd?.id || response.adminUpt?.id || '',
-            username: response.adminOpd?.username || response.adminUpt?.username || username,
-            email: response.adminOpd?.email || response.adminUpt?.email || '',
-            name: response.adminOpd?.nama || response.adminUpt?.nama || '',
-            role: response.adminOpd ? 'admin-opd' : 'admin-upt',
-            // Add other required User fields with defaults
+            id: response.user.id.toString(),
+            username: response.user.username,
+            email: response.user.email || '',
+            name: response.user.username, // Use username as name if no name provided
+            role: role,
             phone: '',
-            nip: '',
-            skpd: response.adminOpd?.skpd || response.adminUpt?.upt || '',
-            jabatan: '',
-            status: 'active',
+            nip: response.user.username, // Assuming username is NIP
+            skpd: response.admin_opd?.id_skpd || '',
+            jabatan: response.admin_opd?.kategori || '',
+            status: response.user.status === '0' ? 'active' : 'inactive',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
@@ -80,6 +111,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => {
+        // Reset interceptor state to prevent any ongoing refresh attempts
+        resetInterceptorState();
+        
         set({
           user: null,
           accessToken: null,
@@ -87,6 +121,10 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: false,
           error: null
         });
+        
+        // Clear any remaining auth data from storage
+        localStorage.removeItem('auth-storage');
+        sessionStorage.clear();
       },
 
       setUser: (user: User) => {
@@ -109,29 +147,109 @@ export const useAuthStore = create<AuthStore>()(
         set({ error: null });
       },
 
-      refreshAccessToken: async () => {
-        const { refreshToken: currentRefreshToken } = get();
-        
-        if (!currentRefreshToken) {
-          throw new Error('No refresh token available');
-        }
+  refreshAccessToken: async () => {
+    const { refreshToken: currentRefreshToken, user: currentUser } = get();
+    
+    if (!currentRefreshToken) {
+      throw new Error('No refresh token available');
+    }
 
+    try {
+      const response = await authApi.refreshToken(currentRefreshToken);
+      
+      set({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        isAuthenticated: true,
+        // Preserve existing user data if available
+        user: currentUser
+      });
+
+      // If user data is missing, try to fetch it
+      if (!currentUser && response.accessToken) {
         try {
-          const response = await authApi.refreshToken(currentRefreshToken);
-          
-          set({
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            isAuthenticated: true
-          });
+          await get().fetchUserProfile();
         } catch (error) {
-          // If refresh fails, logout user
-          get().logout();
-          throw error;
+          console.warn('Failed to fetch user profile after token refresh:', error);
         }
-      },
+      }
+    } catch (error: any) {
+      console.error('Refresh token error:', error);
+      
+      // Check if it's specifically an invalid refresh token error
+      if (isInvalidRefreshTokenError(error)) {
+        console.log('Invalid refresh token detected, clearing tokens and logging out');
+        // Clear tokens and logout user
+        get().logout();
+      } else {
+        // For other errors, still logout but log differently
+        console.log('Token refresh failed with other error, logging out');
+        get().logout();
+      }
+      
+      throw error;
+    }
+  },
 
-      updateProfile: async (data: Partial<User>) => {
+  fetchUserProfile: async () => {
+    const { accessToken } = get();
+    
+    if (!accessToken) {
+      throw new Error('No access token available');
+    }
+
+    try {
+      // Decode JWT to get user info
+      const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+      
+      // Create user object from token payload
+      const user: User = {
+        id: tokenPayload.userId?.toString() || '',
+        username: tokenPayload.username || '',
+        email: '',
+        name: tokenPayload.username || '',
+        role: tokenPayload.level === '1' ? 'super_admin' : 'admin',
+        phone: '',
+        nip: tokenPayload.username || '',
+        skpd: '',
+        jabatan: '',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      set({ user });
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      throw error;
+    }
+  },
+
+  verifyAndRecoverUser: async () => {
+    const { accessToken, refreshToken, user } = get();
+    
+    // If we have tokens but no user data, try to recover
+    if ((accessToken || refreshToken) && !user) {
+      try {
+        if (accessToken) {
+          // Try to extract user from current access token
+          await get().fetchUserProfile();
+          return true;
+        } else if (refreshToken) {
+          // Try to refresh token and get user data
+          await get().refreshAccessToken();
+          return true;
+        }
+      } catch (error) {
+        console.error('Failed to recover user data:', error);
+        // If recovery fails, logout to clean state
+        get().logout();
+        return false;
+      }
+    }
+    
+    return !!user; // Return true if user already exists
+  },      updateProfile: async (data: Partial<User>) => {
         const { user } = get();
         if (!user) return;
 
@@ -204,14 +322,57 @@ export const useAuthStore = create<AuthStore>()(
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated
-      })
+      }),
+      onRehydrateStorage: () => (state) => {
+        // Auto-recovery user data from token when store rehydrates
+        if (state && (state.accessToken || state.refreshToken) && !state.user) {
+          console.log('Auto-recovering user data from tokens on rehydrate...');
+          
+          // Try to extract user from access token
+          if (state.accessToken) {
+            try {
+              const tokenPayload = JSON.parse(atob(state.accessToken.split('.')[1]));
+              
+              const user: User = {
+                id: tokenPayload.userId?.toString() || '',
+                username: tokenPayload.username || '',
+                email: '',
+                name: tokenPayload.username || '',
+                role: tokenPayload.level === '1' ? 'super_admin' : 'admin',
+                phone: '',
+                nip: tokenPayload.username || '',
+                skpd: '',
+                jabatan: '',
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+
+              // Update the state with recovered user
+              useAuthStore.setState({ user });
+              console.log('✅ User data recovered from access token');
+            } catch (error) {
+              console.error('❌ Failed to recover user from access token:', error);
+            }
+          }
+        }
+      }
     }
   )
 );
 
 // Selectors for easier usage
 export const useAuth = () => {
-  const { user, isAuthenticated, isLoading, error } = useAuthStore();
+  const { user, isAuthenticated, isLoading, error, accessToken } = useAuthStore();
+  
+  // Auto-recovery jika ada token tapi tidak ada user
+  useEffect(() => {
+    if (isAuthenticated && accessToken && !user) {
+      console.log('🔄 Auto-recovering user data...');
+      useAuthStore.getState().fetchUserProfile().catch(console.error);
+    }
+  }, [isAuthenticated, accessToken, user]);
+  
   return { user, isAuthenticated, isLoading, error };
 };
 
@@ -225,6 +386,8 @@ export const useAuthActions = () => {
     setError, 
     clearError, 
     refreshAccessToken,
+    fetchUserProfile,
+    verifyAndRecoverUser,
     updateProfile, 
     changePassword 
   } = useAuthStore();
@@ -237,7 +400,18 @@ export const useAuthActions = () => {
     setError, 
     clearError, 
     refreshAccessToken,
+    fetchUserProfile,
+    verifyAndRecoverUser,
     updateProfile, 
     changePassword 
   };
+};
+
+// Helper function to initialize auth state on app start
+export const initializeAuth = async () => {
+  try {
+    await useAuthStore.getState().verifyAndRecoverUser();
+  } catch (error) {
+    console.error('Failed to initialize auth:', error);
+  }
 };

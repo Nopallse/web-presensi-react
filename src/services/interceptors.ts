@@ -1,6 +1,7 @@
 import axiosInstance from './axiosInstance';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
+import { isInvalidRefreshTokenError, handleAuthError } from '../utils/authUtils';
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
@@ -14,6 +15,12 @@ const processQueue = (error: any, token: string | null = null) => {
     }
   });
   
+  failedQueue = [];
+};
+
+// Function to reset interceptor state (called when logging out)
+export const resetInterceptorState = () => {
+  isRefreshing = false;
   failedQueue = [];
 };
 
@@ -55,6 +62,22 @@ axiosInstance.interceptors.response.use(
 
     // Handle 401 errors with token refresh
     if (response?.status === 401 && !config._retry) {
+      // Don't retry refresh token requests to prevent infinite loops
+      if (config.url?.includes('/auth/refresh-token')) {
+        console.log('Refresh token request failed, logging out user');
+        isRefreshing = false; // Reset refresh state
+        processQueue(error, null); // Clear the queue
+        logout();
+        showToast({
+          message: 'Sesi Anda telah berakhir. Silakan login kembali.',
+          type: 'error'
+        });
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -71,6 +94,12 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        // Check if we have a refresh token before attempting to refresh
+        const { refreshToken } = useAuthStore.getState();
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
         await refreshAccessToken();
         const newAccessToken = useAuthStore.getState().accessToken;
         processQueue(null, newAccessToken);
@@ -78,15 +107,32 @@ axiosInstance.interceptors.response.use(
         if (newAccessToken) {
           config.headers.Authorization = `Bearer ${newAccessToken}`;
           return axiosInstance(config);
+        } else {
+          throw new Error('Failed to get new access token');
         }
-      } catch (refreshError) {
+      } catch (refreshError: any) {
+        console.error('Token refresh failed:', refreshError);
+        
         processQueue(refreshError, null);
-        showToast({
-          message: 'Sesi Anda telah berakhir. Silakan login kembali.',
-          type: 'error'
-        });
-        logout();
-        window.location.href = '/login';
+        
+        if (isInvalidRefreshTokenError(refreshError)) {
+          showToast({
+            message: 'Sesi Anda telah berakhir. Silakan login kembali.',
+            type: 'error'
+          });
+          logout();
+          handleAuthError('Invalid refresh token detected');
+        } else {
+          showToast({
+            message: 'Gagal memperbarui sesi. Silakan login kembali.',
+            type: 'error'
+          });
+          logout();
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        }
+        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
