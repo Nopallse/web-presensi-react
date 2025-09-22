@@ -3,7 +3,6 @@ import { Layout } from 'antd';
 import { useAuth } from '../../store/authStore';
 import { useSidebar } from '../../store/sidebarStore';
 import Sidebar from './Sidebar';
-import Navbar from './Navbar';
 
 const { Content } = Layout;
 
@@ -33,11 +32,10 @@ const AppShell: React.FC<AppShellProps> = ({ children, className }) => {
           transition: 'margin-left 0.2s ease'
         }}
       >
-        <Navbar />
         <Content 
           style={{ 
             background: '#f5f5f5',
-            minHeight: 'calc(100vh - 64px)'
+            minHeight: '100vh'
           }}
         >
           <div className={className}>

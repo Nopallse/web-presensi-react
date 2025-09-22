@@ -1,6 +1,6 @@
 import React from 'react';
 import { Form, Input, DatePicker, Select, Row, Col } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import type { JadwalKegiatanFormData } from '../types';
 import { JENIS_KEGIATAN_OPTIONS } from '../types';
 
@@ -28,14 +28,6 @@ const KegiatanForm: React.FC<KegiatanFormProps> = ({
     }
   }, [form, initialValues]);
 
-  const handleDateChange = (date: Dayjs | null) => {
-    if (date) {
-      form.setFieldsValue({ 
-        tanggal_kegiatan: date.format('YYYY-MM-DD') 
-      });
-    }
-  };
-
   return (
     <>
       <Row gutter={16}>
@@ -52,7 +44,6 @@ const KegiatanForm: React.FC<KegiatanFormProps> = ({
               size="large"
               format="DD/MM/YYYY"
               placeholder="Pilih tanggal kegiatan"
-              onChange={handleDateChange}
               disabledDate={(current) => {
                 // Disable past dates
                 return current && current < dayjs().startOf('day');

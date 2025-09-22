@@ -224,16 +224,8 @@ const KegiatanDetail: React.FC = () => {
   return (
     <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ 
-        marginBottom: '24px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '8px'
-      }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
               Detail Kegiatan
@@ -245,7 +237,7 @@ const KegiatanDetail: React.FC = () => {
         </div>
         
         <Space>
-            <Button
+          <Button
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate('/kegiatan')}
           >

@@ -15,6 +15,14 @@ export interface User {
   avatar?: string;
   createdAt: string;
   updatedAt: string;
+  // Additional admin_opd data
+  admin_opd?: {
+    admopd_id: number;
+    id_skpd: string;
+    id_satker: string;
+    id_bidang?: string;
+    kategori: number;
+  };
 }
 
 export interface ApiResponse<T = any> {

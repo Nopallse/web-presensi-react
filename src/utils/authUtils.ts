@@ -33,13 +33,10 @@ export const isAuthError = (error: ApiError): boolean => {
 /**
  * Handle logout and redirect to login page
  */
-export const handleAuthError = (message: string = 'Sesi Anda telah berakhir. Silakan login kembali.') => {
+export const handleAuthError = () => {
   // Clear any stored tokens
   localStorage.removeItem('auth-storage');
   sessionStorage.clear();
-  
-  // Show error message
-  console.log('Auth error:', message);
   
   // Redirect to login page
   setTimeout(() => {

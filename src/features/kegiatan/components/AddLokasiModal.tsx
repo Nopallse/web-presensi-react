@@ -31,7 +31,7 @@ const AddLokasiModal: React.FC<AddLokasiModalProps> = ({
   visible,
   onCancel,
   onSuccess,
-  kegiatanId,
+  kegiatanId: _kegiatanId, // Used by parent component for API calls
   existingLokasiIds,
   onAddLokasi
 }) => {

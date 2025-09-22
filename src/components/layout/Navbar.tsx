@@ -103,10 +103,10 @@ const Navbar: React.FC = () => {
                 {user.name?.charAt(0)?.toUpperCase()}
               </Avatar>
               <div style={{ textAlign: 'left' }}>
-                <Text strong style={{ fontSize: '14px', display: 'block', lineHeight: 1.2 }}>
+                <Text strong style={{ fontSize: '14px', display: 'block', lineHeight: 0.5 }}>
                   {user.name}
                 </Text>
-                <Text type="secondary" style={{ fontSize: '12px', lineHeight: 1.2 }}>
+                <Text type="secondary" style={{ fontSize: '12px', lineHeight:  0.5 }}>
                   {user.role === 'super_admin' ? 'Super Admin' : 'Admin'}
                 </Text>
               </div>

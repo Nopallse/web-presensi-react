@@ -11,15 +11,16 @@ import {
   Popconfirm, 
   Tag, 
   DatePicker,
-  Row,
-  Col
+  Typography
 } from 'antd';
 import { 
   PlusOutlined, 
   EditOutlined, 
   DeleteOutlined, 
   EyeOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  SearchOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { kegiatanApi } from '../services/kegiatanApi';
@@ -30,6 +31,7 @@ import { dateFormatter } from '../../../utils/dateFormatter';
 const { Search } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
+const { Title } = Typography;
 
 const KegiatanPage: React.FC = () => {
   const navigate = useNavigate();
@@ -90,7 +92,7 @@ const KegiatanPage: React.FC = () => {
   };
 
   const handleDateRangeFilter = (dates: any) => {
-    if (dates && dates.length === 2) {
+    if (dates && dates.length === 2 && dates[0] && dates[1]) {
       setFilters(prev => ({
         ...prev,
         tanggal_kegiatan: dates[0].format('YYYY-MM-DD'),
@@ -234,61 +236,66 @@ const KegiatanPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
-          Kelola Jadwal Kegiatan
-        </h1>
-        <p style={{ color: '#666', margin: 0 }}>
-          Kelola jadwal kegiatan dan acara
-        </p>
-      </div>
-
+    <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
       <Card>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <Title level={3} style={{ margin: 0 }}>
+            Kelola Jadwal Kegiatan
+          </Title>
+          
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/kegiatan/create')}
+          >
+            Tambah Kegiatan
+          </Button>
+        </div>
+
         {/* Filters */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
-          <Col xs={24} sm={8}>
-            <Search
-              placeholder="Cari kegiatan..."
-              allowClear
-              onSearch={handleSearch}
-              style={{ width: '100%' }}
-            />
-          </Col>
-          <Col xs={24} sm={6}>
-            <Select
-              placeholder="Jenis Kegiatan"
-              allowClear
-              style={{ width: '100%' }}
-              onChange={handleJenisFilter}
-            >
-              {JENIS_KEGIATAN_OPTIONS.map((option) => (
-                <Option key={option.value} value={option.value}>
-                  {option.label}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-          <Col xs={24} sm={6}>
-            <RangePicker
-              style={{ width: '100%' }}
-              placeholder={['Tanggal Mulai', 'Tanggal Selesai']}
-              format="DD/MM/YYYY"
-              onChange={handleDateRangeFilter}
-            />
-          </Col>
-          <Col xs={24} sm={4}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/kegiatan/create')}
-              style={{ width: '100%' }}
-            >
-              Tambah
-            </Button>
-          </Col>
-        </Row>
+        <div style={{ 
+          marginBottom: '16px', 
+          display: 'flex', 
+          gap: '12px', 
+          flexWrap: 'wrap',
+          alignItems: 'center'
+        }}>
+          <Search
+            placeholder="Cari kegiatan..."
+            allowClear
+            style={{ width: 280, minWidth: 200 }}
+            onSearch={handleSearch}
+            prefix={<SearchOutlined />}
+          />
+          
+          <Select
+            placeholder="Jenis Kegiatan"
+            allowClear
+            style={{ width: 180, minWidth: 150 }}
+            onChange={handleJenisFilter}
+          >
+            {JENIS_KEGIATAN_OPTIONS.map((option) => (
+              <Option key={option.value} value={option.value}>
+                {option.label}
+              </Option>
+            ))}
+          </Select>
+          
+          <RangePicker
+            style={{ width: 240, minWidth: 200 }}
+            placeholder={['Tanggal Mulai', 'Tanggal Selesai']}
+            format="DD/MM/YYYY"
+            onChange={handleDateRangeFilter}
+          />
+          
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchData}
+            loading={loading}
+          >
+            Refresh
+          </Button>
+        </div>
 
         {/* Table */}
         <Table
@@ -296,7 +303,13 @@ const KegiatanPage: React.FC = () => {
           dataSource={data}
           rowKey="id_kegiatan"
           loading={loading}
-          pagination={pagination}
+          pagination={{
+            ...pagination,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total: number, range: [number, number]) => 
+              `${range[0]}-${range[1]} dari ${total} item`,
+          }}
           onChange={handleTableChange}
           scroll={{ x: 900 }}
           size="small"

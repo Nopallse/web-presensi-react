@@ -24,6 +24,7 @@ export const roleGuard = {
         'dashboard',
         'pegawai',
         'skpd',
+        'unit-kerja',
         'lokasi',
         'kegiatan',
         'presensi',
@@ -34,13 +35,16 @@ export const roleGuard = {
         'dashboard',
         'pegawai',
         'skpd',
+        'unit-kerja',
         'lokasi',
-        'presensi'
+        'presensi',
+        'device-reset'
       ],
       'admin-opd': [
         'dashboard',
         'pegawai',
-        'presensi'
+        'presensi',
+        'device-reset'
       ],
       'admin-upt': [
         'dashboard',
@@ -59,6 +63,7 @@ export const roleGuard = {
         { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
         { label: 'SKPD', path: '/skpd', icon: 'Building' },
+        { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
         { label: 'Lokasi', path: '/lokasi', icon: 'MapPin' },
         { label: 'Kegiatan', path: '/kegiatan', icon: 'Calendar' },
         { label: 'Presensi', path: '/presensi', icon: 'Clock' },
@@ -70,19 +75,23 @@ export const roleGuard = {
             { label: 'Jam Dinas per Organisasi', path: '/jam-dinas/organisasi' }
           ]
         },
+        { label: 'Admin Logs', path: '/admin-logs', icon: 'FileText' },
         { label: 'Pengaturan', path: '/pengaturan', icon: 'Settings' }
       ],
       admin: [
         { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
         { label: 'SKPD', path: '/skpd', icon: 'Building' },
+        { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
         { label: 'Lokasi', path: '/lokasi', icon: 'MapPin' },
-        { label: 'Presensi', path: '/presensi', icon: 'Clock' }
+        { label: 'Presensi', path: '/presensi', icon: 'Clock' },
+        { label: 'Reset Device', path: '/device-reset', icon: 'Mobile' }
       ],
       'admin-opd': [
         { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
-        { label: 'Presensi', path: '/presensi', icon: 'Clock' }
+        { label: 'Presensi', path: '/presensi', icon: 'Clock' },
+        { label: 'Reset Device', path: '/device-reset', icon: 'Mobile' }
       ],
       'admin-upt': [
         { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
@@ -97,7 +106,7 @@ export const roleGuard = {
   // Check if user can perform CRUD operations
   canCreate: (userRole: Role, resource: string): boolean => {
     const createPermissions: Record<Role, string[]> = {
-      super_admin: ['pegawai', 'skpd', 'lokasi', 'kegiatan', 'jam-dinas'],
+      super_admin: ['pegawai', 'skpd', 'unit-kerja', 'lokasi', 'kegiatan', 'jam-dinas'],
       admin: ['pegawai', 'lokasi'],
       'admin-opd': [],
       'admin-upt': []
@@ -108,7 +117,7 @@ export const roleGuard = {
 
   canEdit: (userRole: Role, resource: string): boolean => {
     const editPermissions: Record<Role, string[]> = {
-      super_admin: ['pegawai', 'skpd', 'lokasi', 'kegiatan', 'jam-dinas', 'pengaturan'],
+      super_admin: ['pegawai', 'skpd', 'unit-kerja', 'lokasi', 'kegiatan', 'jam-dinas', 'pengaturan'],
       admin: ['pegawai', 'lokasi'],
       'admin-opd': [],
       'admin-upt': []
@@ -119,7 +128,7 @@ export const roleGuard = {
 
   canDelete: (userRole: Role, resource: string): boolean => {
     const deletePermissions: Record<Role, string[]> = {
-      super_admin: ['pegawai', 'skpd', 'lokasi', 'kegiatan'],
+      super_admin: ['pegawai', 'skpd', 'unit-kerja', 'lokasi', 'kegiatan'],
       admin: ['pegawai', 'lokasi'],
       'admin-opd': [],
       'admin-upt': []

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Form, Button, Card, message, Spin } from 'antd';
+import { Form, Button, Card, Row, Col, message, Spin } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { kegiatanApi } from '../services/kegiatanApi';
 import KegiatanForm from '../components/KegiatanForm';
 import type { JadwalKegiatan, JadwalKegiatanFormData } from '../types';
@@ -29,7 +30,7 @@ const KegiatanEdit: React.FC = () => {
       
       // Set form values
       form.setFieldsValue({
-        tanggal_kegiatan: kegiatanData.tanggal_kegiatan,
+        tanggal_kegiatan: kegiatanData.tanggal_kegiatan ? dayjs(kegiatanData.tanggal_kegiatan) : undefined,
         jenis_kegiatan: kegiatanData.jenis_kegiatan,
         keterangan: kegiatanData.keterangan
       });
@@ -50,7 +51,9 @@ const KegiatanEdit: React.FC = () => {
       const values = await form.validateFields();
       
       const formData: Partial<JadwalKegiatanFormData> = {
-        tanggal_kegiatan: values.tanggal_kegiatan,
+        tanggal_kegiatan: dayjs.isDayjs(values.tanggal_kegiatan) 
+          ? values.tanggal_kegiatan.format('YYYY-MM-DD') 
+          : values.tanggal_kegiatan,
         jenis_kegiatan: values.jenis_kegiatan,
         keterangan: values.keterangan
       };
@@ -100,23 +103,10 @@ const KegiatanEdit: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ 
-        marginBottom: '24px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '8px'
-      }}>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={handleCancel}
-          >
-            Kembali
-          </Button>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
               Edit Kegiatan
@@ -132,42 +122,48 @@ const KegiatanEdit: React.FC = () => {
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
+        style={{ marginTop: '24px' }}
       >
-        <Card title="Informasi Kegiatan">
-          <KegiatanForm 
-            form={form} 
-            initialValues={{
-              tanggal_kegiatan: kegiatan.tanggal_kegiatan,
-              jenis_kegiatan: kegiatan.jenis_kegiatan,
-              keterangan: kegiatan.keterangan
-            }}
-          />
-          
-          <div style={{ 
-            marginTop: 32, 
-            display: 'flex', 
-            gap: 12, 
-            justifyContent: 'flex-end',
-            borderTop: '1px solid #f0f0f0',
-            paddingTop: 16
-          }}>
-            <Button
-              onClick={handleCancel}
-              size="large"
-            >
-              Batal
-            </Button>
-            <Button
-              type="primary"
-              icon={<SaveOutlined />}
-              loading={loading}
-              onClick={handleSubmit}
-              size="large"
-            >
-              Simpan Perubahan
-            </Button>
-          </div>
-        </Card>
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={16} xl={14}>
+            <Card title="Informasi Kegiatan" style={{ height: '100%' }}>
+              <KegiatanForm 
+                form={form} 
+                initialValues={{
+                  tanggal_kegiatan: kegiatan.tanggal_kegiatan,
+                  jenis_kegiatan: kegiatan.jenis_kegiatan,
+                  keterangan: kegiatan.keterangan
+                }}
+              />
+              
+              <div style={{ 
+                marginTop: 32, 
+                display: 'flex', 
+                gap: 12, 
+                justifyContent: 'flex-end',
+                borderTop: '1px solid #f0f0f0',
+                paddingTop: 16
+              }}>
+                <Button
+                  icon={<ArrowLeftOutlined />}
+                  onClick={handleCancel}
+                  size="large"
+                >
+                  Kembali
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  loading={loading}
+                  onClick={handleSubmit}
+                  size="large"
+                >
+                  Simpan Perubahan
+                </Button>
+              </div>
+            </Card>
+          </Col>
+        </Row>
       </Form>
     </div>
   );

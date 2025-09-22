@@ -90,7 +90,14 @@ export const useAuthStore = create<AuthStore>()(
             jabatan: response.admin_opd?.kategori || '',
             status: response.user.status === '0' ? 'active' : 'inactive',
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            admin_opd: response.admin_opd ? {
+              admopd_id: Number(response.admin_opd.admopd_id),
+              id_skpd: response.admin_opd.id_skpd,
+              id_satker: response.admin_opd.id_satker,
+              id_bidang: response.admin_opd.id_bidang || undefined,
+              kategori: Number(response.admin_opd.kategori)
+            } : undefined
           };
           
           set({
@@ -170,7 +177,7 @@ export const useAuthStore = create<AuthStore>()(
         try {
           await get().fetchUserProfile();
         } catch (error) {
-          console.warn('Failed to fetch user profile after token refresh:', error);
+          // User profile fetch failed, but token refresh succeeded
         }
       }
     } catch (error: any) {
@@ -178,7 +185,6 @@ export const useAuthStore = create<AuthStore>()(
       
       // Check if it's specifically an invalid refresh token error
       if (isInvalidRefreshTokenError(error)) {
-        console.log('Invalid refresh token detected, clearing tokens and logging out');
         // Clear tokens and logout user
         get().logout();
       } else {

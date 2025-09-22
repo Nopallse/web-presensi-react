@@ -21,7 +21,28 @@ import LokasiDetail from '../features/lokasi/pages/LokasiDetail';
 import LokasiCreate from '../features/lokasi/pages/LokasiCreate';
 import LokasiEdit from '../features/lokasi/pages/LokasiEdit';
 
+// Kegiatan
 import { KegiatanPage, KegiatanDetail, KegiatanCreate, KegiatanEdit } from '../features/kegiatan';
+
+// Unit Kerja
+import { UnitKerjaPage } from '../features/unit-kerja';
+
+// Pengaturan
+import PengaturanPage from '../features/pengaturan/pages/PengaturanPage';
+
+// Jam Dinas
+import { JamDinasPage, JamDinasForm, JamDinasOrganisasiPage } from '../features/jam-dinas';
+const JamDinasDetail = React.lazy(() => import('../features/jam-dinas/pages/JamDinasDetail'));
+
+// Presensi
+import { PresensiPage, PresensiDetail, MonthlyPresensiPage } from '../features/presensi';
+
+// Device Reset
+import DeviceResetPage from '../features/device-reset/pages/DeviceResetPage';
+
+// Admin Logs
+import { AdminLogsPage, AdminLogsStatsPage } from '../features/admin-logs';
+
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -104,6 +125,16 @@ const AppRoutes: React.FC = () => {
           }
         />
         
+        {/* Unit Kerja routes */}
+        <Route
+          path="/unit-kerja"
+          element={
+            <ProtectedRoute>
+              <UnitKerjaPage />
+            </ProtectedRoute>
+          }
+        />
+        
         {/* Lokasi routes */}
         <Route
           path="/lokasi"
@@ -177,7 +208,15 @@ const AppRoutes: React.FC = () => {
           path="/presensi"
           element={
             <ProtectedRoute>
-              <div>Presensi List Page (Coming Soon)</div>
+              <PresensiPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/presensi/monthly"
+          element={
+            <ProtectedRoute>
+              <MonthlyPresensiPage />
             </ProtectedRoute>
           }
         />
@@ -185,17 +224,61 @@ const AppRoutes: React.FC = () => {
           path="/presensi/:id"
           element={
             <ProtectedRoute>
-              <div>Presensi Detail Page (Coming Soon)</div>
+              <PresensiDetail />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Device Reset routes */}
+        <Route
+          path="/device-reset"
+          element={
+            <ProtectedRoute>
+              <DeviceResetPage />
             </ProtectedRoute>
           }
         />
         
         {/* Jam Dinas routes */}
         <Route
+          path="/jam-dinas"
+          element={
+            <ProtectedRoute>
+              <JamDinasPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jam-dinas/create"
+          element={
+            <ProtectedRoute>
+              <JamDinasForm mode="create" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jam-dinas/:id"
+          element={
+            <ProtectedRoute>
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <JamDinasDetail />
+              </React.Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jam-dinas/:id/edit"
+          element={
+            <ProtectedRoute>
+              <JamDinasForm mode="edit" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/jam-dinas/kelola"
           element={
             <ProtectedRoute>
-              <div>Kelola Jam Dinas Page (Coming Soon)</div>
+              <JamDinasPage />
             </ProtectedRoute>
           }
         />
@@ -203,25 +286,35 @@ const AppRoutes: React.FC = () => {
           path="/jam-dinas/organisasi"
           element={
             <ProtectedRoute>
-              <div>Jam Dinas per Organisasi Page (Coming Soon)</div>
+              <JamDinasOrganisasiPage />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Admin Logs routes */}
+        <Route
+          path="/admin-logs"
+          element={
+            <ProtectedRoute>
+              <AdminLogsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-logs/stats"
+          element={
+            <ProtectedRoute>
+              <AdminLogsStatsPage />
             </ProtectedRoute>
           }
         />
         
         {/* Pengaturan routes */}
         <Route
-          path="/pengaturan/general"
+          path="/pengaturan"
           element={
             <ProtectedRoute>
-              <div>General Setting Page (Coming Soon)</div>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/pengaturan/account"
-          element={
-            <ProtectedRoute>
-              <div>Account Setting Page (Coming Soon)</div>
+              <PengaturanPage />
             </ProtectedRoute>
           }
         />

@@ -1,4 +1,5 @@
 import { apiClient } from '../../../services/apiService';
+import { useAuthStore } from '../../../store/authStore';
 import type { 
   LokasiListResponse, 
   LokasiDetailResponse,
@@ -8,8 +9,28 @@ import type {
   LokasiSearchResponse 
 } from '../types';
 
+/**
+ * Get base path based on user role
+ */
+const getBasePath = (): string => {
+  const user = useAuthStore.getState().user;
+  const role = user?.role;
+  
+  switch (role) {
+    case 'super_admin':
+      return '/superadmin/lokasi';
+    case 'admin':
+    case 'admin-opd':
+    case 'admin-upt':
+      return '/admin/lokasi';
+    default:
+      // Default to admin for safety
+      return '/admin/lokasi';
+  }
+};
+
 export const lokasiApi = {
-  // Get all lokasi (super admin only)
+  // Get all lokasi
   getAll: async (filters: LokasiFilters = {}): Promise<LokasiListResponse> => {
     const params = new URLSearchParams();
     
@@ -18,7 +39,7 @@ export const lokasiApi = {
     if (filters.search) params.append('search', filters.search);
     if (filters.status !== undefined) params.append('status', filters.status.toString());
 
-    const endpoint = '/superadmin/lokasi';
+    const endpoint = getBasePath();
     const queryString = params.toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
     
@@ -26,27 +47,27 @@ export const lokasiApi = {
     return response.data;
   },
 
-  // Get lokasi by ID (super admin only)
+  // Get lokasi by ID
   getById: async (id: number): Promise<LokasiDetailResponse> => {
-    const response = await apiClient.get<LokasiDetailResponse>(`/superadmin/lokasi/${id}`);
+    const response = await apiClient.get<LokasiDetailResponse>(`${getBasePath()}/${id}`);
     return response.data;
   },
 
   // Create new lokasi
   create: async (data: CreateLokasiRequest): Promise<Lokasi> => {
-    const response = await apiClient.post<Lokasi>('/superadmin/lokasi', data);
+    const response = await apiClient.post<Lokasi>(getBasePath(), data);
     return response.data;
   },
 
   // Update lokasi
   update: async (lokasi_id: number, data: Partial<CreateLokasiRequest>): Promise<Lokasi> => {
-    const response = await apiClient.patch<Lokasi>(`/superadmin/lokasi/${lokasi_id}`, data);
+    const response = await apiClient.patch<Lokasi>(`${getBasePath()}/${lokasi_id}`, data);
     return response.data;
   },
 
   // Delete lokasi
   delete: async (lokasi_id: number): Promise<void> => {
-    await apiClient.delete(`/superadmin/lokasi/${lokasi_id}`);
+    await apiClient.delete(`${getBasePath()}/${lokasi_id}`);
   },
 
   // Search lokasi
@@ -54,7 +75,7 @@ export const lokasiApi = {
     const params = new URLSearchParams();
     params.append('q', query);
     
-    const response = await apiClient.get<LokasiSearchResponse>(`/superadmin/lokasi/search?${params.toString()}`);
+    const response = await apiClient.get<LokasiSearchResponse>(`${getBasePath()}/search?${params.toString()}`);
     return response.data;
   }
 };
