@@ -6,11 +6,11 @@ export interface LoginRequest {
 }
 
 export interface AdminOpd {
-  admopd_id: string;
+  admopd_id: number;
   id_skpd: string;
   id_satker: string;
-  id_bidang: string;
-  kategori: string;
+  id_bidang?: string;
+  kategori: number;
 }
 
 export interface AdminUpt {

@@ -121,7 +121,7 @@ axiosInstance.interceptors.response.use(
             type: 'error'
           });
           logout();
-          handleAuthError('Invalid refresh token detected');
+          handleAuthError();
         } else {
           showToast({
             message: 'Gagal memperbarui sesi. Silakan login kembali.',

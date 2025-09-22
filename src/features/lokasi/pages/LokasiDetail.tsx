@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Card, Descriptions, Tag, Spin, message, Row, Col } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import { lokasiApi } from '../services/lokasiApi';
 import type { Lokasi } from '../types';
 
@@ -30,19 +30,6 @@ const LokasiDetail: React.FC = () => {
       message.error('Gagal memuat detail lokasi');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!lokasi) return;
-    
-    try {
-      await lokasiApi.delete(lokasi.lokasi_id);
-      message.success('Lokasi berhasil dihapus');
-      navigate('/lokasi');
-    } catch (error: any) {
-      console.error('Error deleting lokasi:', error);
-      message.error('Gagal menghapus lokasi');
     }
   };
 
