@@ -130,14 +130,6 @@ code {
   background-color: #f5f5f5 !important;
 }
 
-.ant-table-tbody > tr:hover > td .ant-btn {
-  color: #0ea5e9 !important;
-}
-
-.ant-table-tbody > tr:hover > td .ant-btn:hover {
-  color: #0284c7 !important;
-  background-color: #f0f9ff !important;
-}
 
 /* Button in table cell styling */
 .ant-table .ant-btn-text {

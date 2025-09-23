@@ -12,9 +12,6 @@ import DashboardPage from '../features/dashboard/pages/DashboardPage';
 // Pegawai
 import { PegawaiPage } from '../features/pegawai';
 
-// SKPD  
-import { SKPDPage } from '../features/skpd';
-
 // Lokasi
 import LokasiPage from '../features/lokasi/pages/LokasiPage';
 import LokasiDetail from '../features/lokasi/pages/LokasiDetail';
@@ -106,16 +103,7 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        
-        {/* SKPD routes */}
-        <Route
-          path="/skpd"
-          element={
-            <ProtectedRoute>
-              <SKPDPage />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/skpd/:id"
           element={

@@ -53,6 +53,12 @@ export interface LokasiListResponse {
     itemsPerPage: number;
   };
   searchQuery?: string | null;
+  filters?: {
+    id_skpd?: string | null;
+    id_satker?: string | null;
+    id_bidang?: string | null;
+    search?: string | null;
+  };
 }
 
 export interface LokasiFilters {
@@ -61,6 +67,8 @@ export interface LokasiFilters {
   search?: string;
   status?: boolean;
   id_skpd?: string;
+  id_satker?: string;
+  id_bidang?: string;
 }
 
 export interface CreateLokasiRequest {

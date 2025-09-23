@@ -38,6 +38,9 @@ export const lokasiApi = {
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.search) params.append('search', filters.search);
     if (filters.status !== undefined) params.append('status', filters.status.toString());
+    if (filters.id_skpd) params.append('id_skpd', filters.id_skpd);
+    if (filters.id_satker) params.append('id_satker', filters.id_satker);
+    if (filters.id_bidang) params.append('id_bidang', filters.id_bidang);
 
     const endpoint = getBasePath();
     const queryString = params.toString();

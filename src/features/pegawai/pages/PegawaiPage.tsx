@@ -16,7 +16,7 @@ import {
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { useAuth } from '../../../store/authStore';
 import { pegawaiApi } from '../services/pegawaiApi';
-import { skpdApi } from '../../skpd/services/skpdApi';
+import { unitKerjaApi } from '../../unit-kerja/services/unitKerjaApi';
 import type { Pegawai, PegawaiFilters } from '../types';
 import DebounceSelect from '../../../components/DebounceSelect';
 
@@ -164,7 +164,7 @@ const PegawaiPage: React.FC = () => {
         return [];
       }
 
-      const response = await skpdApi.getAll({
+      const response = await unitKerjaApi.getAllSkpd({
         search: search || '',
         page: 1,
         limit: 20,

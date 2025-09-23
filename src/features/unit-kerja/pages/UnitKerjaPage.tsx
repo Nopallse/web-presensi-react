@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Card, Tabs, Typography, Space, Breadcrumb } from 'antd';
+import { Card, Tabs, Typography, Space } from 'antd';
 import { 
   ApartmentOutlined, 
   BankOutlined, 
-  TeamOutlined,
-  HomeOutlined 
+  TeamOutlined
 } from '@ant-design/icons';
 import SKPDTab from '../components/SKPDTab';
 import SatkerTab from '../components/SatkerTab';
@@ -44,37 +43,11 @@ const UnitKerjaPage: React.FC<UnitKerjaPageProps> = () => {
     }
   };
 
-  const getBreadcrumbItems = () => {
-    const items = [
-      {
-        href: '#',
-        title: <><HomeOutlined /> Beranda</>,
-      },
-      {
-        title: 'Unit Kerja',
-      }
-    ];
-
-    if (selectedSKPD) {
-      items.push({
-        title: selectedSKPD.NMSKPD,
-      });
-    }
-
-    if (selectedSatker) {
-      items.push({
-        title: selectedSatker.NMSATKER,
-      });
-    }
-
-    return items;
-  };
 
   return (
     <div style={{ padding: '24px' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div>
-          <Breadcrumb items={getBreadcrumbItems()} />
           <Title level={2} style={{ margin: '8px 0 0 0' }}>
             <ApartmentOutlined /> Unit Kerja
           </Title>

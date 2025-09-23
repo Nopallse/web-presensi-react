@@ -9,7 +9,10 @@ import {
   message,
   Tag,
   Space,
-  Popconfirm
+  Popconfirm,
+  Row,
+  Col,
+  Select
 } from 'antd';
 import { 
   SearchOutlined,
@@ -17,15 +20,18 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  EyeOutlined
+  EyeOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { useAuth } from '../../../store/authStore';
 import { lokasiApi } from '../services/lokasiApi';
+import { organizationApi } from '../services/organizationApi';
 import type { Lokasi, LokasiFilters } from '../types';
 
 const { Title } = Typography;
 const { Search } = Input;
+const { Option } = Select;
 
 const LokasiPage: React.FC = () => {
   const { user } = useAuth();
@@ -38,6 +44,14 @@ const LokasiPage: React.FC = () => {
     total: 0,
   });
   const [filters, setFilters] = useState<LokasiFilters>({});
+  
+  // Filter options state
+  const [skpdOptions, setSkpdOptions] = useState<Array<{label: string, value: string}>>([]);
+  const [satkerOptions, setSatkerOptions] = useState<Array<{label: string, value: string}>>([]);
+  const [bidangOptions, setBidangOptions] = useState<Array<{label: string, value: string}>>([]);
+  const [loadingSkpd, setLoadingSkpd] = useState(false);
+  const [loadingSatker, setLoadingSatker] = useState(false);
+  const [loadingBidang, setLoadingBidang] = useState(false);
 
   // Check if user is super admin
   const isSuperAdmin = user?.role === 'super_admin';
@@ -58,48 +72,74 @@ const LokasiPage: React.FC = () => {
       render: (ket: string) => <strong style={{ fontSize: '13px' }}>{ket}</strong>,
     },
     {
-      title: 'Latitude',
-      dataIndex: 'lat',
-      key: 'lat',
-      width: 120,
-      render: (lat: number) => (
-        <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>
-          {lat.toFixed(6)}
-        </span>
-      ),
+      title: 'SKPD',
+      key: 'skpd',
+      width: 300,
+      ellipsis: true,
+      render: (_, record) => {
+        if (record.skpd_data) {
+          return (
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: 'bold' }}>
+                {record.skpd_data.KDSKPD} - {record.skpd_data.NMSKPD.trim()}
+              </div>
+              <Tag 
+                color={record.skpd_data.StatusSKPD === 'Aktif' ? 'green' : 'orange'} 
+                style={{ fontSize: '10px', marginTop: '2px' }}
+              >
+                {record.skpd_data.StatusSKPD}
+              </Tag>
+            </div>
+          );
+        }
+        return <span style={{ color: '#999', fontSize: '12px' }}>-</span>;
+      },
     },
     {
-      title: 'Longitude',
-      dataIndex: 'lng',
-      key: 'lng',
-      width: 120,
-      render: (lng: number) => (
-        <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>
-          {lng.toFixed(6)}
-        </span>
-      ),
+      title: 'ID Satker',
+      dataIndex: 'id_satker',
+      key: 'id_satker',
+      width: 150,
+      render: (id_satker: string | null, record) => {
+        if (id_satker) {
+          return (
+            <div>
+              <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>
+                {id_satker}
+              </span>
+              {record.satker_data && (
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                  {record.satker_data.NMSATKER}
+                </div>
+              )}
+            </div>
+          );
+        }
+        return <span style={{ color: '#999', fontSize: '12px' }}>-</span>;
+      },
     },
     {
-      title: 'Radius (km)',
-      dataIndex: 'range',
-      key: 'range',
-      width: 100,
-      render: (range: number) => (
-        <span style={{ fontSize: '12px' }}>
-          {(range / 1000).toFixed(2)}
-        </span>
-      ),
-    },
-    {
-      title: 'ID SKPD',
-      dataIndex: 'id_skpd',
-      key: 'id_skpd',
-      width: 100,
-      render: (id_skpd: string | null) => (
-        <span style={{ fontSize: '12px', fontFamily: 'monospace' }}>
-          {id_skpd || '-'}
-        </span>
-      ),
+      title: 'ID Bidang',
+      dataIndex: 'id_bidang',
+      key: 'id_bidang',
+      width: 150,
+      render: (id_bidang: string | null, record) => {
+        if (id_bidang) {
+          return (
+            <div>
+              <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>
+                {id_bidang}
+              </span>
+              {record.bidang_data && (
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                  {record.bidang_data.NMBIDANG}
+                </div>
+              )}
+            </div>
+          );
+        }
+        return <span style={{ color: '#999', fontSize: '12px' }}>-</span>;
+      },
     },
     {
       title: 'Status',
@@ -156,8 +196,71 @@ const LokasiPage: React.FC = () => {
   useEffect(() => {
     if (isSuperAdmin) {
       fetchLokasiList();
+      fetchSkpdOptions();
     }
   }, [isSuperAdmin, pagination.current, pagination.pageSize, filters]);
+
+  // Fetch SKPD options
+  const fetchSkpdOptions = async () => {
+    try {
+      setLoadingSkpd(true);
+      const response = await organizationApi.searchSkpd('', 1, 100);
+      const options = [
+        { label: '🚫 Tanpa SKPD', value: 'null' },
+        ...response.data.map(skpd => ({
+          label: `${skpd.KDSKPD} - ${skpd.NMSKPD.trim()}`,
+          value: skpd.KDSKPD
+        }))
+      ];
+      setSkpdOptions(options);
+    } catch (error) {
+      console.error('Error fetching SKPD options:', error);
+    } finally {
+      setLoadingSkpd(false);
+    }
+  };
+
+  // Fetch Satker options based on selected SKPD
+  const fetchSatkerOptions = async (kdSkpd: string) => {
+    try {
+      setLoadingSatker(true);
+      const response = await organizationApi.searchSatker(kdSkpd, '', 1, 100);
+      const options = [
+        { label: '🚫 Tanpa Satker', value: 'null' },
+        ...response.data.map(satker => ({
+          label: `${satker.KDSATKER} - ${satker.NMSATKER}`,
+          value: satker.KDSATKER
+        }))
+      ];
+      setSatkerOptions(options);
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
+      setSatkerOptions([]);
+    } finally {
+      setLoadingSatker(false);
+    }
+  };
+
+  // Fetch Bidang options based on selected SKPD and Satker
+  const fetchBidangOptions = async (kdSkpd: string, kdSatker: string) => {
+    try {
+      setLoadingBidang(true);
+      const response = await organizationApi.searchBidang(kdSkpd, kdSatker, '', 1, 100);
+      const options = [
+        { label: '🚫 Tanpa Bidang', value: 'null' },
+        ...response.data.map(bidang => ({
+          label: `${bidang.BIDANGF} - ${bidang.NMBIDANG}`,
+          value: bidang.BIDANGF
+        }))
+      ];
+      setBidangOptions(options);
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
+      setBidangOptions([{ label: '🚫 Tanpa Bidang', value: 'null' }]);
+    } finally {
+      setLoadingBidang(false);
+    }
+  };
 
   const fetchLokasiList = async () => {
     try {
@@ -208,6 +311,65 @@ const LokasiPage: React.FC = () => {
       search: value || undefined,
     }));
     setPagination(prev => ({ ...prev, current: 1 }));
+    // fetchLokasiList akan dipanggil otomatis oleh useEffect karena filters berubah
+  };
+
+  const handleSkpdFilter = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      id_skpd: value || undefined,
+      id_satker: undefined, // Reset satker when SKPD changes
+      id_bidang: undefined, // Reset bidang when SKPD changes
+    }));
+    setSatkerOptions([]);
+    setBidangOptions([]);
+    setPagination(prev => ({ ...prev, current: 1 }));
+    
+    // Jika memilih SKPD yang bukan null, fetch satker options
+    if (value && value !== 'null') {
+      fetchSatkerOptions(value);
+    } else if (value === 'null') {
+      // Jika memilih "Tanpa SKPD", set satker options dengan opsi null saja
+      setSatkerOptions([{ label: '🚫 Tanpa Satker', value: 'null' }]);
+    }
+  };
+
+  const handleSatkerFilter = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      id_satker: value || undefined,
+      id_bidang: undefined, // Reset bidang when Satker changes
+    }));
+    setBidangOptions([]);
+    setPagination(prev => ({ ...prev, current: 1 }));
+    
+    // Jika memilih Satker yang bukan null dan SKPD juga bukan null, fetch bidang options
+    if (value && value !== 'null' && filters.id_skpd && filters.id_skpd !== 'null') {
+      fetchBidangOptions(filters.id_skpd, value);
+    } else if (value === 'null' || filters.id_skpd === 'null') {
+      // Jika memilih "Tanpa Satker" atau SKPD adalah null, set bidang options dengan opsi null saja
+      setBidangOptions([{ label: '🚫 Tanpa Bidang', value: 'null' }]);
+    }
+  };
+
+  const handleBidangFilter = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      id_bidang: value || undefined,
+    }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setSatkerOptions([]);
+    setBidangOptions([]);
+    setPagination(prev => ({ ...prev, current: 1 }));
+    message.success('Filter berhasil dibersihkan');
+  };
+
+  const handleRefresh = () => {
+    fetchLokasiList();
   };
 
   const handleDelete = async (lokasiId: number) => {
@@ -221,9 +383,7 @@ const LokasiPage: React.FC = () => {
     }
   };
 
-  const handleRefresh = () => {
-    fetchLokasiList();
-  };
+  const hasActiveFilters = filters.search || filters.id_skpd || filters.id_satker || filters.id_bidang;
 
   // Don't render if not super admin
   if (!isSuperAdmin) {
@@ -256,29 +416,98 @@ const LokasiPage: React.FC = () => {
           </Button>
         </div>
 
-        <div style={{ 
-          marginBottom: '16px', 
-          display: 'flex', 
-          gap: '12px', 
-          flexWrap: 'wrap',
-          alignItems: 'center'
-        }}>
-          <Search
-            placeholder="Cari lokasi..."
-            allowClear
-            style={{ width: 280, minWidth: 200 }}
-            onSearch={handleSearch}
-            prefix={<SearchOutlined />}
-          />
+        <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Search
+              placeholder="Cari lokasi..."
+              allowClear
+              style={{ width: '100%' }}
+              onSearch={handleSearch}
+              prefix={<SearchOutlined />}
+            />
+          </Col>
           
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={loading}
-          >
-            Refresh
-          </Button>
-        </div>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Select
+              placeholder="Filter SKPD"
+              allowClear
+              style={{ width: '100%' }}
+              value={filters.id_skpd}
+              onChange={handleSkpdFilter}
+              loading={loadingSkpd}
+              showSearch
+              optionFilterProp="children"
+            >
+              {skpdOptions.map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Select
+              placeholder="Filter Satker"
+              allowClear
+              style={{ width: '100%' }}
+              value={filters.id_satker}
+              onChange={handleSatkerFilter}
+              loading={loadingSatker}
+              disabled={!filters.id_skpd}
+              showSearch
+              optionFilterProp="children"
+            >
+              {satkerOptions.map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Select
+              placeholder="Filter Bidang"
+              allowClear
+              style={{ width: '100%' }}
+              value={filters.id_bidang}
+              onChange={handleBidangFilter}
+              loading={loadingBidang}
+              disabled={!filters.id_satker}
+              showSearch
+              optionFilterProp="children"
+            >
+              {bidangOptions.map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Space>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+                loading={loading}
+              >
+                Refresh
+              </Button>
+
+              {hasActiveFilters && (
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={handleClearFilters}
+                  type="dashed"
+                >
+                  Clear Filter
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
 
         <Table
           columns={columns}

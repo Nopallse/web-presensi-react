@@ -62,7 +62,6 @@ export const roleGuard = {
       super_admin: [
         { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
-        { label: 'SKPD', path: '/skpd', icon: 'Building' },
         { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
         { label: 'Lokasi', path: '/lokasi', icon: 'MapPin' },
         { label: 'Kegiatan', path: '/kegiatan', icon: 'Calendar' },
