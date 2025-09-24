@@ -29,27 +29,51 @@ const LoginPage: React.FC = () => {
       <div style={{ maxWidth: '400px', width: '100%' }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          {/* Logo */}
-          <div 
-            style={{
-              width: '64px',
-              height: '64px',
-              backgroundColor: '#0ea5e9',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 24px',
-              boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)'
-            }}
-          >
-            <FileTextOutlined style={{ fontSize: '32px', color: 'white' }} />
+          {/* Logo Kota */}
+          <div style={{ marginBottom: '24px' }}>
+            <img 
+              src="/logo-kota.png" 
+              alt="Logo Kota" 
+              style={{
+                width: '80px',
+                height: '80px',
+                objectFit: 'contain',
+                margin: '0 auto',
+                display: 'block'
+              }}
+              onError={(e) => {
+                // Fallback jika logo tidak ditemukan
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+            {/* Fallback logo jika gambar tidak ada */}
+            <div 
+              style={{
+                width: '80px',
+                height: '80px',
+                backgroundColor: '#0ea5e9',
+                borderRadius: '50%',
+                display: 'none',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)'
+              }}
+            >
+              <FileTextOutlined style={{ fontSize: '32px', color: 'white' }} />
+            </div>
           </div>
           
           {/* Title */}
           <Title level={2} style={{ marginBottom: '8px', color: '#262626' }}>
-            Sistem Presensi
+            Aplikasi E-Presensi
           </Title>
+          <Text type="secondary" style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
+            Khusus untuk Akses Login sebagai Admin
+          </Text>
           <Text type="secondary" style={{ fontSize: '14px' }}>
             Masukkan username dan password untuk login
           </Text>
