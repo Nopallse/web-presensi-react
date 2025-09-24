@@ -62,6 +62,7 @@ export interface PegawaiFilters {
   limit?: number;
   kdskpd?: string;
   search?: string;
+  status?: string;
 }
 
 export interface SKPD {

@@ -20,24 +20,65 @@ const LokasiForm: React.FC<LokasiFormProps> = ({
 
   useEffect(() => {
     if (initialValues) {
-      form.setFieldsValue(initialValues);
-      if (initialValues.id_skpd) {
+      // Convert initial values to proper format for DebounceSelect
+      const convertedInitialValues = { ...initialValues };
+      
+      // Convert SKPD to object format if it's a string
+      if (initialValues.id_skpd && typeof initialValues.id_skpd === 'string') {
+        convertedInitialValues.id_skpd = {
+          value: initialValues.id_skpd,
+          label: `${initialValues.id_skpd}` // We'll let DebounceSelect load the proper label
+        };
         setSelectedSkpd(initialValues.id_skpd);
+      } else if (initialValues.id_skpd && typeof initialValues.id_skpd === 'object') {
+        setSelectedSkpd(initialValues.id_skpd.value);
       }
-      if ((initialValues as any).id_satker) {
+      
+      // Convert Satker to object format if it's a string
+      if ((initialValues as any).id_satker && typeof (initialValues as any).id_satker === 'string') {
+        convertedInitialValues.id_satker = {
+          value: (initialValues as any).id_satker,
+          label: `${(initialValues as any).id_satker}`
+        };
         setSelectedSatker((initialValues as any).id_satker);
+      } else if ((initialValues as any).id_satker && typeof (initialValues as any).id_satker === 'object') {
+        setSelectedSatker((initialValues as any).id_satker.value);
       }
+      
+      // Convert Bidang to object format if it's a string
+      if ((initialValues as any).id_bidang && typeof (initialValues as any).id_bidang === 'string') {
+        convertedInitialValues.id_bidang = {
+          value: (initialValues as any).id_bidang,
+          label: `${(initialValues as any).id_bidang}`
+        };
+      }
+      
+      form.setFieldsValue(convertedInitialValues);
     }
   }, [form, initialValues]);
 
   // Watch for form field changes to update internal state
   useEffect(() => {
     const currentValues = form.getFieldsValue();
-    if (currentValues.id_skpd && currentValues.id_skpd !== selectedSkpd) {
-      setSelectedSkpd(currentValues.id_skpd);
+    
+    // Handle SKPD value changes
+    if (currentValues.id_skpd) {
+      const skpdValue = typeof currentValues.id_skpd === 'string' 
+        ? currentValues.id_skpd 
+        : currentValues.id_skpd?.value;
+      if (skpdValue && skpdValue !== selectedSkpd) {
+        setSelectedSkpd(skpdValue);
+      }
     }
-    if (currentValues.id_satker && currentValues.id_satker !== selectedSatker) {
-      setSelectedSatker(currentValues.id_satker);
+    
+    // Handle Satker value changes
+    if (currentValues.id_satker) {
+      const satkerValue = typeof currentValues.id_satker === 'string' 
+        ? currentValues.id_satker 
+        : currentValues.id_satker?.value;
+      if (satkerValue && satkerValue !== selectedSatker) {
+        setSelectedSatker(satkerValue);
+      }
     }
   }, [form, selectedSkpd, selectedSatker]);
 
@@ -95,7 +136,7 @@ const LokasiForm: React.FC<LokasiFormProps> = ({
     setSelectedSkpd(selectedValue?.value || null);
     setSelectedSatker(null);
     form.setFieldsValue({ 
-      id_skpd: selectedValue?.value || null,
+      id_skpd: selectedValue,
       id_satker: null,
       id_bidang: null 
     });
@@ -105,14 +146,14 @@ const LokasiForm: React.FC<LokasiFormProps> = ({
     const selectedValue = Array.isArray(value) ? value[0] : value;
     setSelectedSatker(selectedValue?.value || null);
     form.setFieldsValue({ 
-      id_satker: selectedValue?.value || null,
+      id_satker: selectedValue,
       id_bidang: null 
     });
   };
 
   const handleBidangChange = (value: any) => {
     const selectedValue = Array.isArray(value) ? value[0] : value;
-    form.setFieldsValue({ id_bidang: selectedValue?.value || null });
+    form.setFieldsValue({ id_bidang: selectedValue });
   };
 
   return (

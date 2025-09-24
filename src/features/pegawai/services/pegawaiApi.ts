@@ -11,6 +11,7 @@ export const pegawaiApi = {
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.kdskpd) params.append('id_skpd', filters.kdskpd);
     if (filters.search) params.append('search', filters.search);
+    if (filters.status !== undefined) params.append('status', filters.status);
 
     // Get user role to determine endpoint
     const { user } = useAuthStore.getState();

@@ -28,11 +28,13 @@ const LokasiCreate: React.FC = () => {
         lat: selectedLocation.lat,
         lng: selectedLocation.lng,
         range: radius,
-        id_skpd: values.id_skpd,
-        id_satker: values.id_satker || null,
-        id_bidang: values.id_bidang || null,
+        id_skpd: values.id_skpd?.value || values.id_skpd || null,
+        id_satker: values.id_satker?.value || values.id_satker || null,
+        id_bidang: values.id_bidang?.value || values.id_bidang || null,
         status: values.status
       };
+
+      console.log('Create form data being sent:', formData); // Debug log
 
       await lokasiApi.create(formData);
       message.success('Lokasi berhasil ditambahkan');

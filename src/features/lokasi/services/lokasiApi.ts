@@ -62,7 +62,7 @@ export const lokasiApi = {
     return response.data;
   },
 
-  // Update lokasi
+  // Update lokasi (PATCH - only send changed fields)
   update: async (lokasi_id: number, data: Partial<CreateLokasiRequest>): Promise<Lokasi> => {
     const response = await apiClient.patch<Lokasi>(`${getBasePath()}/${lokasi_id}`, data);
     return response.data;

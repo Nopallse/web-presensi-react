@@ -34,10 +34,15 @@ const PegawaiPage: React.FC = () => {
   });
   const [filters, setFilters] = useState<PegawaiFilters>({});
   const [selectedSKPD, setSelectedSKPD] = useState<{ label: string; value: string } | null>(null);
+  const [tableFilters, setTableFilters] = useState<Record<string, any>>({});
 
   // Check if user is super admin
   console.log('User role:', user?.role);
   const isSuperAdmin = user?.role === 'super_admin';
+
+  // Status constants
+  const AKTIF = 10;
+  const TDKAKTIF = 11;
 
   const columns: ColumnsType<Pegawai> = [
     {
@@ -71,12 +76,17 @@ const PegawaiPage: React.FC = () => {
     },
     {
       title: 'Status',
-      dataIndex: 'status_aktif',
-      key: 'status_aktif',
+      dataIndex: 'status',
+      key: 'status',
       width: 100,
-      render: (status: string) => {
-        const color = status === 'AKTIF' ? 'green' : status === 'NONAKTIF' ? 'red' : 'default';
-        const text = status || 'TIDAK DIKETAHUI';
+      filters: [
+        { text: 'Aktif', value: AKTIF },
+        { text: 'Non-Aktif', value: TDKAKTIF },
+      ],
+      render: (status: string | number) => {
+        const isActive = status === AKTIF || status === '10' || status === 10;
+        const color = isActive ? 'green' : 'red';
+        const text = isActive ? 'AKTIF' : 'NON-AKTIF';
         return <Tag color={color} style={{ fontSize: '11px' }}>{text}</Tag>;
       },
     },
@@ -99,10 +109,16 @@ const PegawaiPage: React.FC = () => {
   const fetchPegawai = async () => {
     setLoading(true);
     try {
-      console.log('Fetching pegawai with filters:', filters); // Log untuk debugging
+      // Combine regular filters with table filters
+      const allFilters = {
+        ...filters,
+        ...tableFilters,
+      };
+      
+      console.log('Fetching pegawai with filters:', allFilters); // Log untuk debugging
       
       const response = await pegawaiApi.getAll({
-        ...filters,
+        ...allFilters,
         page: pagination.current,
         limit: pagination.pageSize,
       });
@@ -122,14 +138,25 @@ const PegawaiPage: React.FC = () => {
 
   useEffect(() => {
     fetchPegawai();
-  }, [pagination.current, pagination.pageSize, filters]);
+  }, [pagination.current, pagination.pageSize, filters, tableFilters]);
 
-  const handleTableChange = (pagination: TablePaginationConfig) => {
+  const handleTableChange = (
+    pagination: TablePaginationConfig,
+    filters: Record<string, any>
+  ) => {
     setPagination(prev => ({
       ...prev,
       current: pagination.current || 1,
       pageSize: pagination.pageSize || 10,
     }));
+
+    // Update table filters from Ant Design table filters
+    const newTableFilters: Record<string, any> = {};
+    if (filters.status && filters.status.length > 0) {
+      // Convert to number for backend
+      newTableFilters.status = Number(filters.status[0]);
+    }
+    setTableFilters(newTableFilters);
   };
 
   const handleSearch = (value: string) => {
@@ -152,6 +179,7 @@ const PegawaiPage: React.FC = () => {
 
   const handleClearFilters = () => {
     setFilters({});
+    setTableFilters({});
     setSelectedSKPD(null);
     setPagination(prev => ({ ...prev, current: 1 }));
     message.success('Filter berhasil dibersihkan');
@@ -228,7 +256,7 @@ const PegawaiPage: React.FC = () => {
             Refresh
           </Button>
 
-          {(filters.search || filters.kdskpd) && (
+          {(filters.search || filters.kdskpd || Object.keys(tableFilters).length > 0) && (
             <Button
               onClick={handleClearFilters}
               type="dashed"

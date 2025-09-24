@@ -12,7 +12,8 @@ import {
   Popconfirm,
   Row,
   Col,
-  Select
+  Select,
+  Tooltip
 } from 'antd';
 import { 
   SearchOutlined,
@@ -74,68 +75,114 @@ const LokasiPage: React.FC = () => {
     {
       title: 'SKPD',
       key: 'skpd',
-      width: 300,
+      width: 120,
       ellipsis: true,
       render: (_, record) => {
         if (record.skpd_data) {
           return (
-            <div>
-              <div style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                {record.skpd_data.KDSKPD} - {record.skpd_data.NMSKPD.trim()}
+            <Tooltip 
+              title={
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>{record.skpd_data.NMSKPD.trim()}</div>
+                  <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                    Status: {record.skpd_data.StatusSKPD}
+                  </div>
+                </div>
+              }
+              placement="topLeft"
+            >
+              <div style={{ cursor: 'help' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                  {record.skpd_data.KDSKPD}
+                </div>
               </div>
-              <Tag 
-                color={record.skpd_data.StatusSKPD === 'Aktif' ? 'green' : 'orange'} 
-                style={{ fontSize: '10px', marginTop: '2px' }}
-              >
-                {record.skpd_data.StatusSKPD}
-              </Tag>
-            </div>
+            </Tooltip>
           );
         }
         return <span style={{ color: '#999', fontSize: '12px' }}>-</span>;
       },
     },
     {
-      title: 'ID Satker',
+      title: 'Satker',
       dataIndex: 'id_satker',
       key: 'id_satker',
-      width: 150,
+      width: 100,
       render: (id_satker: string | null, record) => {
-        if (id_satker) {
+        if (id_satker && record.satker_data) {
           return (
-            <div>
-              <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>
+            <Tooltip 
+              title={
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>{record.satker_data.NMSATKER}</div>
+                  <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                    Jabatan: {record.satker_data.NAMA_JABATAN}
+                  </div>
+                  <div style={{ fontSize: '12px' }}>
+                    Eselon: {record.satker_data.KDESELON}
+                  </div>
+                </div>
+              }
+              placement="topLeft"
+            >
+              <span style={{ 
+                fontSize: '12px', 
+                fontFamily: 'monospace',
+                cursor: 'help',
+                textDecoration: 'underline',
+                textDecorationStyle: 'dotted'
+              }}>
                 {id_satker}
               </span>
-              {record.satker_data && (
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                  {record.satker_data.NMSATKER}
-                </div>
-              )}
-            </div>
+            </Tooltip>
+          );
+        } else if (id_satker) {
+          return (
+            <span style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+              {id_satker}
+            </span>
           );
         }
         return <span style={{ color: '#999', fontSize: '12px' }}>-</span>;
       },
     },
     {
-      title: 'ID Bidang',
+      title: 'Bidang',
       dataIndex: 'id_bidang',
       key: 'id_bidang',
-      width: 150,
+      width: 100,
       render: (id_bidang: string | null, record) => {
-        if (id_bidang) {
+        if (id_bidang && record.bidang_data) {
           return (
-            <div>
-              <span style={{ fontSize: '11px', fontFamily: 'monospace' }}>
+            <Tooltip 
+              title={
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>{record.bidang_data.NMBIDANG}</div>
+                  <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                    Jabatan: {record.bidang_data.NAMA_JABATAN}
+                  </div>
+                  <div style={{ fontSize: '12px' }}>
+                    Eselon: {record.bidang_data.KDESELON}
+                  </div>
+                </div>
+              }
+              placement="topLeft"
+            >
+              <span style={{ 
+                fontSize: '12px', 
+                fontFamily: 'monospace',
+                cursor: 'help',
+                textDecoration: 'underline',
+                textDecorationStyle: 'dotted'
+              }}>
                 {id_bidang}
               </span>
-              {record.bidang_data && (
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                  {record.bidang_data.NMBIDANG}
-                </div>
-              )}
-            </div>
+            </Tooltip>
+          );
+        } else if (id_bidang) {
+          return (
+            <span style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+              {id_bidang}
+            </span>
           );
         }
         return <span style={{ color: '#999', fontSize: '12px' }}>-</span>;
@@ -146,6 +193,10 @@ const LokasiPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
+      filters: [
+        { text: 'Aktif', value: '1' },
+        { text: 'Tidak Aktif', value: '0' },
+      ],
       render: (status: boolean) => (
         <Tag color={status ? 'green' : 'red'} style={{ fontSize: '11px' }}>
           {status ? 'Aktif' : 'Tidak Aktif'}

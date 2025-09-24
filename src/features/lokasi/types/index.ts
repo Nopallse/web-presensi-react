@@ -65,7 +65,7 @@ export interface LokasiFilters {
   page?: number;
   limit?: number;
   search?: string;
-  status?: boolean;
+  status?: string | boolean;
   id_skpd?: string;
   id_satker?: string;
   id_bidang?: string;
@@ -91,9 +91,9 @@ export interface LokasiFormData {
   lat: number | null;
   lng: number | null;
   range: number;
-  id_skpd: string | null;
-  id_satker?: string | null;
-  id_bidang?: string | null;
+  id_skpd: string | { label: string; value: string } | null;
+  id_satker?: string | { label: string; value: string } | null;
+  id_bidang?: string | { label: string; value: string } | null;
   status: boolean;
 }
 

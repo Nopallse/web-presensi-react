@@ -16,6 +16,7 @@ const LokasiEdit: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [lokasi, setLokasi] = useState<Lokasi | null>(null);
+  const [initialValues, setInitialValues] = useState<any>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number }>({
     lat: -0.914865,
     lng: 100.461
@@ -39,17 +40,45 @@ const LokasiEdit: React.FC = () => {
       setSelectedLocation({ lat: lokasiData.lat, lng: lokasiData.lng });
       setRadius(lokasiData.range);
       
-      // Set form values
-      form.setFieldsValue({
+      // Prepare initial values for form and tracking
+      const formValues: any = {
         ket: lokasiData.ket,
         lat: lokasiData.lat,
         lng: lokasiData.lng,
         range: lokasiData.range,
-        id_skpd: lokasiData.id_skpd,
-        id_satker: lokasiData.id_satker,
-        id_bidang: lokasiData.id_bidang,
-        status: lokasiData.status
-      });
+        status: lokasiData.status,
+        id_skpd: null,
+        id_satker: null,
+        id_bidang: null
+      };
+
+      // Convert organizational data to DebounceSelect format
+      if (lokasiData.id_skpd && lokasiData.skpd_data) {
+        formValues.id_skpd = {
+          label: `${lokasiData.skpd_data.KDSKPD} - ${lokasiData.skpd_data.NMSKPD.trim()}`,
+          value: lokasiData.id_skpd
+        };
+      }
+
+      if (lokasiData.id_satker && lokasiData.satker_data) {
+        formValues.id_satker = {
+          label: `${lokasiData.satker_data.KDSATKER} - ${lokasiData.satker_data.NMSATKER}`,
+          value: lokasiData.id_satker
+        };
+      }
+
+      if (lokasiData.id_bidang && lokasiData.bidang_data) {
+        formValues.id_bidang = {
+          label: `${lokasiData.bidang_data.BIDANGF} - ${lokasiData.bidang_data.NMBIDANG}`,
+          value: lokasiData.id_bidang
+        };
+      }
+      
+      // Store initial values for comparison
+      setInitialValues(formValues);
+      
+      // Set form values
+      form.setFieldsValue(formValues);
     } catch (error: any) {
       console.error('Error fetching lokasi detail:', error);
       message.error('Gagal memuat data lokasi');
@@ -59,25 +88,73 @@ const LokasiEdit: React.FC = () => {
     }
   };
 
+  // Helper function to extract value from DebounceSelect format
+  const extractValue = (field: any) => {
+    if (field && typeof field === 'object' && field.value !== undefined) {
+      return field.value;
+    }
+    return field;
+  };
+
+  // Helper function to detect changes between initial and current values
+  const getChangedFields = (currentValues: any) => {
+    if (!initialValues) return {};
+
+    const changes: any = {};
+
+    // Check basic fields
+    const basicFields = ['ket', 'lat', 'lng', 'range', 'status'];
+    basicFields.forEach(field => {
+      if (currentValues[field] !== initialValues[field]) {
+        changes[field] = currentValues[field];
+      }
+    });
+
+    // Check organizational fields
+    const orgFields = ['id_skpd', 'id_satker', 'id_bidang'];
+    orgFields.forEach(field => {
+      const currentValue = extractValue(currentValues[field]);
+      const initialValue = extractValue(initialValues[field]);
+      
+      if (currentValue !== initialValue) {
+        changes[field] = currentValue;
+      }
+    });
+
+    return changes;
+  };
+
   const handleSubmit = async () => {
-    if (!lokasi) return;
+    if (!lokasi || !initialValues) return;
     
     try {
       setLoading(true);
       const values = await form.validateFields();
       
-      const formData = {
-        ket: values.ket,
+      // Include current location and radius from state
+      const currentValues = {
+        ...values,
         lat: selectedLocation.lat,
         lng: selectedLocation.lng,
-        range: radius,
-        id_skpd: values.id_skpd,
-        id_satker: values.id_satker || null,
-        id_bidang: values.id_bidang || null,
-        status: values.status
+        range: radius
       };
 
-      await lokasiApi.update(lokasi.lokasi_id, formData);
+      console.log('Current form values:', currentValues);
+      console.log('Initial values:', initialValues);
+      
+      // Get only changed fields
+      const changedFields = getChangedFields(currentValues);
+      
+      console.log('Changed fields:', changedFields);
+
+      // If no changes, show message and return
+      if (Object.keys(changedFields).length === 0) {
+        message.info('Tidak ada perubahan untuk disimpan');
+        return;
+      }
+
+      // Send only changed fields to server
+      await lokasiApi.update(lokasi.lokasi_id, changedFields);
       message.success('Lokasi berhasil diperbarui');
       navigate(`/lokasi/${lokasi.lokasi_id}`);
     } catch (error: any) {
@@ -102,7 +179,7 @@ const LokasiEdit: React.FC = () => {
     form.setFieldsValue({ range: value });
   };
 
-  // Update form values when location changes
+  // Update form values when location/radius changes from map
   React.useEffect(() => {
     form.setFieldsValue({
       lat: selectedLocation.lat,
@@ -142,18 +219,17 @@ const LokasiEdit: React.FC = () => {
     <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Edit Lokasi</h1>
           <p style={{ color: '#666', margin: 0 }}>Edit informasi lokasi presensi</p>
         </div>
         <div style={{ marginLeft: 'auto' }}>
-            <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={handleCancel}
-        >
-          Kembali
-        </Button>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={handleCancel}
+          >
+            Kembali
+          </Button>
         </div>
       </div>
 
@@ -162,11 +238,6 @@ const LokasiEdit: React.FC = () => {
         layout="vertical"
         onFinish={handleSubmit}
         style={{ marginTop: '24px' }}
-        initialValues={{
-          status: true,
-          range: 100,
-          id_skpd: ''
-        }}
       >
         <Row gutter={[24, 24]}>
           {/* Map Section */}
@@ -214,19 +285,12 @@ const LokasiEdit: React.FC = () => {
           {/* Form Section */}
           <Col xs={24} lg={12}>
             <Card title="Informasi Lokasi" style={{ height: '100%' }}>
-              <LokasiForm 
-                form={form} 
-                initialValues={{
-                  ket: lokasi.ket,
-                  lat: lokasi.lat,
-                  lng: lokasi.lng,
-                  range: lokasi.range,
-                  id_skpd: lokasi.id_skpd,
-                  id_satker: lokasi.id_satker,
-                  id_bidang: lokasi.id_bidang,
-                  status: lokasi.status
-                }}
-              />
+              {initialValues && (
+                <LokasiForm 
+                  form={form} 
+                  initialValues={initialValues}
+                />
+              )}
               <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
                 <Button
                   onClick={handleCancel}
