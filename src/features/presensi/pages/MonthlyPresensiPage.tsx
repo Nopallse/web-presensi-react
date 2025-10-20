@@ -27,6 +27,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { presensiApi } from '../services/presensiApi';
+import DebounceSelect from '../../../components/DebounceSelect';
 import type {
   MonthlyAttendanceData,
   MonthlyAttendanceFilters,
@@ -45,11 +46,18 @@ const MonthlyPresensiPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   
+  // Satker dan Bidang options state
+  const [satkerOptions, setSatkerOptions] = useState<Array<{ label: string; value: string; }>>([]);
+  const [bidangOptions, setBidangOptions] = useState<Array<{ label: string; value: string; }>>([]);
+  const [loadingSatker, setLoadingSatker] = useState(false);
+  const [loadingBidang, setLoadingBidang] = useState(false);
+  
   // Filter state
   const [filters, setFilters] = useState<MonthlyAttendanceFilters>({
     year: parseInt(searchParams.get('year') || '') || new Date().getFullYear(),
     month: parseInt(searchParams.get('month') || '') || (new Date().getMonth() + 1),
-    lokasi_id: searchParams.get('lokasi_id') || undefined,
+    satker: searchParams.get('satker') || '',
+    bidang: searchParams.get('bidang') || '',
     user_id: searchParams.get('user_id') || undefined,
     page: 1,
     limit: 31 // For daily breakdown
@@ -57,7 +65,76 @@ const MonthlyPresensiPage: React.FC = () => {
 
   useEffect(() => {
     fetchMonthlyData();
-  }, [filters.year, filters.month, filters.lokasi_id, filters.user_id]);
+  }, [filters.year, filters.month, filters.satker, filters.bidang, filters.user_id]);
+
+  // Fetch Satker options untuk initial load
+  const fetchSatkerOptions = async (search?: string) => {
+    try {
+      setLoadingSatker(true);
+      const options = await presensiApi.getSatkerOptions(search);
+      setSatkerOptions(options);
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
+      setSatkerOptions([]);
+    } finally {
+      setLoadingSatker(false);
+    }
+  };
+
+  // Fetch Bidang options untuk initial load
+  const fetchBidangOptions = async (kdSatker: string, search?: string) => {
+    try {
+      setLoadingBidang(true);
+      const options = await presensiApi.getBidangOptions(kdSatker, search);
+      setBidangOptions(options);
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
+      const defaultOptions = [{ label: '🚫 Tanpa Bidang', value: 'null' }];
+      setBidangOptions(defaultOptions);
+    } finally {
+      setLoadingBidang(false);
+    }
+  };
+
+  // Fetch Satker options (Level 1) - untuk DebounceSelect
+  const fetchSatkerOptionsForSelect = async (search: string): Promise<Array<{ label: string; value: string; }>> => {
+    try {
+      const options = await presensiApi.getSatkerOptions(search);
+      return options;
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
+      return [];
+    }
+  };
+
+  // Fetch Bidang options based on selected Satker (Level 2) - untuk DebounceSelect
+  const fetchBidangOptionsForSelect = async (search: string): Promise<Array<{ label: string; value: string; }>> => {
+    if (!filters.satker || filters.satker === '' || filters.satker === 'null') {
+      return [{ label: '🚫 Tanpa Bidang', value: 'null' }];
+    }
+    
+    try {
+      const options = await presensiApi.getBidangOptions(filters.satker, search);
+      return options;
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
+      return [{ label: '🚫 Tanpa Bidang', value: 'null' }];
+    }
+  };
+
+  // Load initial Satker options
+  useEffect(() => {
+    fetchSatkerOptions();
+  }, []);
+
+  // Load bidang options when satker changes
+  useEffect(() => {
+    if (filters.satker && filters.satker !== '' && filters.satker !== 'null') {
+      fetchBidangOptions(filters.satker);
+    } else {
+      setBidangOptions([{ label: '🚫 Tanpa Bidang', value: 'null' }]);
+    }
+  }, [filters.satker]);
 
   const fetchMonthlyData = async () => {
     setLoading(true);
@@ -77,13 +154,20 @@ const MonthlyPresensiPage: React.FC = () => {
 
   const handleFilterChange = (key: keyof MonthlyAttendanceFilters, value: any) => {
     const newFilters = { ...filters, [key]: value };
+    
+    // Reset bidang when satker changes
+    if (key === 'satker') {
+      newFilters.bidang = '';
+    }
+    
     setFilters(newFilters);
     
     // Update URL search params
     const newParams = new URLSearchParams();
     if (newFilters.year) newParams.set('year', newFilters.year.toString());
     if (newFilters.month) newParams.set('month', newFilters.month.toString());
-    if (newFilters.lokasi_id) newParams.set('lokasi_id', newFilters.lokasi_id);
+    if (newFilters.satker && newFilters.satker !== '') newParams.set('satker', newFilters.satker);
+    if (newFilters.bidang && newFilters.bidang !== '') newParams.set('bidang', newFilters.bidang);
     if (newFilters.user_id) newParams.set('user_id', newFilters.user_id);
     
     setSearchParams(newParams);
@@ -99,9 +183,20 @@ const MonthlyPresensiPage: React.FC = () => {
     try {
       await presensiApi.exportAndDownloadBulanan({
         month: filters.month,
-        year: filters.year
+        year: filters.year,
+        satker: filters.satker,
+        bidang: filters.bidang,
+        user_id: filters.user_id
       });
-      message.success('Export berhasil diunduh');
+      
+      // Create descriptive success message
+      let filterDesc = [];
+      if (filters.satker) filterDesc.push('satker dipilih');
+      if (filters.bidang) filterDesc.push('bidang dipilih');
+      if (filters.user_id) filterDesc.push('user dipilih');
+      
+      const filterText = filterDesc.length > 0 ? ` dengan filter: ${filterDesc.join(', ')}` : '';
+      message.success(`Export bulanan berhasil diunduh${filterText}`);
     } catch (error: any) {
       message.error(error.message || 'Gagal export data');
     } finally {
@@ -338,26 +433,34 @@ const MonthlyPresensiPage: React.FC = () => {
                 </Select>
               </Col>
               <Col xs={24} sm={6}>
-                <Select
-                  placeholder="Filter Lokasi"
-                  value={filters.lokasi_id}
-                  onChange={(value) => handleFilterChange('lokasi_id', value)}
+                <DebounceSelect
+                  placeholder="Filter Satker"
+                  value={filters.satker ? { label: satkerOptions.find(opt => opt.value === filters.satker)?.label || '', value: filters.satker } : undefined}
+                  onChange={(value: any) => {
+                    const selectedValue = value?.value || '';
+                    handleFilterChange('satker', selectedValue);
+                    handleFilterChange('bidang', ''); // Reset bidang when satker changes
+                  }}
+                  fetchOptions={fetchSatkerOptionsForSelect}
                   style={{ width: '100%' }}
                   allowClear
-                >
-                  {/* Add location options here */}
-                </Select>
+                  loading={loadingSatker}
+                />
               </Col>
               <Col xs={24} sm={6}>
-                <Select
-                  placeholder="Filter User"
-                  value={filters.user_id}
-                  onChange={(value) => handleFilterChange('user_id', value)}
+                <DebounceSelect
+                  placeholder="Filter Bidang"
+                  value={filters.bidang ? { label: bidangOptions.find(opt => opt.value === filters.bidang)?.label || '', value: filters.bidang } : undefined}
+                  onChange={(value: any) => {
+                    const selectedValue = value?.value || '';
+                    handleFilterChange('bidang', selectedValue);
+                  }}
+                  fetchOptions={fetchBidangOptionsForSelect}
                   style={{ width: '100%' }}
                   allowClear
-                >
-                  {/* Add user options here */}
-                </Select>
+                  loading={loadingBidang}
+                  disabled={!filters.satker || filters.satker === '' || filters.satker === 'null'}
+                />
               </Col>
             </Row>
           </Card>

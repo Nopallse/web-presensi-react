@@ -20,7 +20,6 @@ export type {
   CreateJadwalKegiatanRequest,
   UpdateJadwalKegiatanRequest,
   LokasiKegiatan,
-  LokasiWithSkpd,
   JenisKegiatan
 } from './types';
 

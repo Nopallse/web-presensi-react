@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Form, Input, Button, Alert } from 'antd';
+import { Form, Input, Button, Alert, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuthActions } from '../../../store/authStore';
-import { useUIStore } from '../../../store/uiStore';
 
 interface LoginFormData {
   username: string;
@@ -14,7 +13,6 @@ const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuthActions();
-  const { showToast } = useUIStore();
   const [form] = Form.useForm();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,10 +25,7 @@ const LoginForm: React.FC = () => {
     try {
       await login(values.username, values.password);
       
-      showToast({
-        message: 'Login berhasil! Selamat datang.',
-        type: 'success'
-      });
+      message.success('Selamat datang! Anda berhasil masuk ke sistem.');
 
       // Navigate to intended page or dashboard
       const from = location.state?.from?.pathname || '/dashboard';

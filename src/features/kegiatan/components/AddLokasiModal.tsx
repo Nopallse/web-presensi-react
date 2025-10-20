@@ -8,7 +8,8 @@ import {
   Input
 } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { organizationApi, type SkpdData } from '../../lokasi/services/organizationApi';
+import { organizationApi, type SatkerData } from '../../lokasi/services/organizationApi';
+import { lokasiKegiatanApi } from '../../lokasi/services/lokasiKegiatanApi';
 
 interface AddLokasiModalProps {
   visible: boolean;
@@ -16,10 +17,10 @@ interface AddLokasiModalProps {
   onSuccess: () => void;
   kegiatanId: number;
   existingLokasiIds: number[];
-  onAddLokasi: (data: { lokasi_id: number; kdskpd_list: string[] }) => Promise<void>;
+  onAddLokasi: (data: { lokasi_id: number; kdsatker_list: string[] }) => Promise<void>;
 }
 
-interface LokasiOption {
+interface LokasiKegiatanOption {
   lokasi_id: number;
   ket: string;
   lat: number;
@@ -38,46 +39,48 @@ const AddLokasiModal: React.FC<AddLokasiModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedLokasiId, setSelectedLokasiId] = useState<number | null>(null);
-  const [selectedSkpdCodes, setSelectedSkpdCodes] = useState<string[]>([]);
-  const [skpdSearch, setSkpdSearch] = useState('');
-  const [allSkpd, setAllSkpd] = useState<SkpdData[]>([]);
-  const [isLoadingSkpdData, setIsLoadingSkpdData] = useState(false);
+  const [selectedSatkerCodes, setSelectedSatkerCodes] = useState<string[]>([]);
+  const [satkerSearch, setSatkerSearch] = useState('');
+  const [allSatker, setAllSatker] = useState<SatkerData[]>([]);
+  const [isLoadingSatkerData, setIsLoadingSatkerData] = useState(false);
 
-  // Load SKPD data when modal is visible
+  // Load Satker data when modal is visible
   useEffect(() => {
     if (visible) {
-      loadSkpdData();
+      loadSatkerData();
     }
   }, [visible]);
 
-  // Load SKPD data with search
+  // Load Satker data with search
   useEffect(() => {
     if (selectedLokasiId) {
-      loadSkpdData();
+      loadSatkerData();
     }
-  }, [skpdSearch, selectedLokasiId]);
+  }, [satkerSearch, selectedLokasiId]);
 
-  const loadSkpdData = async () => {
+  const loadSatkerData = async () => {
     try {
-      setIsLoadingSkpdData(true);
-      const response = await organizationApi.searchSkpd(skpdSearch, 1, 100);
-      setAllSkpd(response.data);
+      setIsLoadingSatkerData(true);
+      const response = await organizationApi.getAllSatker(satkerSearch, 1, 100);
+      console.log('Satker API Response:', response);
+      setAllSatker(response?.data || []);
     } catch (error) {
-      console.error('Error loading SKPD data:', error);
-      message.error('Gagal memuat daftar SKPD');
+      console.error('Error loading Satker data:', error);
+      message.error('Gagal memuat daftar Satker');
+      setAllSatker([]);
     } finally {
-      setIsLoadingSkpdData(false);
+      setIsLoadingSatkerData(false);
     }
   };
 
-  const handleSkpdSearchChange = (value: string) => {
-    setSkpdSearch(value);
+  const handleSatkerSearchChange = (value: string) => {
+    setSatkerSearch(value);
   };
 
   const handleLokasiChange = (value: any) => {
     setSelectedLokasiId(value?.value || null);
-    setSelectedSkpdCodes([]);
-    form.setFieldsValue({ lokasi_id: value?.value, kdskpd_list: [] });
+    setSelectedSatkerCodes([]);
+    form.setFieldsValue({ lokasi_id: value?.value, kdsatker_list: [] });
   };
 
   const handleSubmit = async () => {
@@ -87,14 +90,14 @@ const AddLokasiModal: React.FC<AddLokasiModalProps> = ({
       
       await onAddLokasi({
         lokasi_id: values.lokasi_id,
-        kdskpd_list: selectedSkpdCodes
+        kdsatker_list: selectedSatkerCodes
       });
       
       message.success('Lokasi berhasil ditambahkan');
       form.resetFields();
       setSelectedLokasiId(null);
-      setSelectedSkpdCodes([]);
-      setSkpdSearch('');
+      setSelectedSatkerCodes([]);
+      setSatkerSearch('');
       onSuccess();
     } catch (error: any) {
       console.error('Error adding lokasi:', error);
@@ -146,14 +149,22 @@ const AddLokasiModal: React.FC<AddLokasiModalProps> = ({
             optionFilterProp="label"
             onChange={handleLokasiChange}
             fetchOptions={async (search) => {
-              const result = await import('../../lokasi/services/lokasiApi').then(mod => mod.lokasiApi.getAll({ limit: 100, search }));
-              return result.data
-                .filter((lokasi: LokasiOption) => !existingLokasiIds.includes(lokasi.lokasi_id))
-                .map((lokasi: LokasiOption) => ({
-                  label: `${lokasi.ket} (${lokasi.lat.toFixed(6)}, ${lokasi.lng.toFixed(6)})`,
-                  value: lokasi.lokasi_id,
-                  key: String(lokasi.lokasi_id),
-                }));
+              try {
+                const result = await lokasiKegiatanApi.getAll({ limit: 100, search });
+                console.log('Lokasi Kegiatan API Response:', result);
+                const lokasiData = result?.data || [];
+                console.log('Lokasi Data:', lokasiData);
+                return lokasiData
+                  .filter((lokasi: LokasiKegiatanOption) => !existingLokasiIds.includes(lokasi.lokasi_id))
+                  .map((lokasi: LokasiKegiatanOption) => ({
+                    label: `${lokasi.ket} (${lokasi.lat.toFixed(6)}, ${lokasi.lng.toFixed(6)})`,
+                    value: lokasi.lokasi_id,
+                    key: String(lokasi.lokasi_id),
+                  }));
+              } catch (error) {
+                console.error('Error fetching lokasi kegiatan:', error);
+                return [];
+              }
             }}
             style={{ width: '100%' }}
           />
@@ -161,121 +172,207 @@ const AddLokasiModal: React.FC<AddLokasiModalProps> = ({
 
         {selectedLokasiId && (
           <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <SearchOutlined style={{ fontSize: '16px', color: '#666' }} />
-              <label style={{ fontSize: '14px', fontWeight: '500' }}>Pilih SKPD</label>
-            </div>
-            <Input
-              placeholder="Cari SKPD..."
-              value={skpdSearch}
-              onChange={(e) => handleSkpdSearchChange(e.target.value)}
-              style={{ width: '100%', marginBottom: '12px' }}
-            />
-            <div style={{ border: '1px solid #d9d9d9', borderRadius: '8px', overflow: 'hidden' }}>
-              <div style={{ maxHeight: '192px', overflowY: 'auto' }}>
-                {isLoadingSkpdData ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666' }}>
-                      <div style={{ 
-                        height: '16px', 
-                        width: '16px', 
-                        animation: 'spin 1s linear infinite', 
-                        borderRadius: '50%', 
-                        border: '2px solid currentColor', 
-                        borderTopColor: 'transparent' 
-                      }}></div>
-                      <span style={{ fontSize: '14px' }}>
-                        {skpdSearch ? 'Mencari SKPD...' : 'Memuat SKPD...'}
-                      </span>
+            {/* Pilih Satker */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <SearchOutlined style={{ fontSize: '16px', color: '#666' }} />
+                <label style={{ fontSize: '14px', fontWeight: '500' }}>Pilih Satker</label>
+              </div>
+              <Input
+                placeholder="Cari Satker..."
+                value={satkerSearch}
+                onChange={(e) => handleSatkerSearchChange(e.target.value)}
+                style={{ width: '100%', marginBottom: '12px' }}
+              />
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ maxHeight: '192px', overflowY: 'auto' }}>
+                  {isLoadingSatkerData ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666' }}>
+                        <div style={{ 
+                          height: '16px', 
+                          width: '16px', 
+                          animation: 'spin 1s linear infinite', 
+                          borderRadius: '50%', 
+                          border: '2px solid currentColor', 
+                          borderTopColor: 'transparent' 
+                        }}></div>
+                        <span style={{ fontSize: '14px' }}>
+                          {satkerSearch ? 'Mencari Satker...' : 'Memuat Satker...'}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ) : allSkpd.length === 0 ? (
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    padding: '32px 0', 
-                    textAlign: 'center' 
-                  }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏢</div>
-                    <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
-                      {skpdSearch ? 'Tidak ada SKPD yang ditemukan' : 'Tidak ada SKPD tersedia'}
-                    </p>
-                  </div>
-                ) : (
-                  allSkpd.map((skpd) => (
-                    <div
-                      key={skpd.KDSKPD}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '12px',
-                        backgroundColor: selectedSkpdCodes.includes(skpd.KDSKPD) ? '#f5f5f5' : 'transparent',
-                        borderBottom: '1px solid #f0f0f0',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onClick={() => {
-                        if (selectedSkpdCodes.includes(skpd.KDSKPD)) {
-                          setSelectedSkpdCodes(codes => codes.filter(code => code !== skpd.KDSKPD));
-                        } else {
-                          setSelectedSkpdCodes(codes => [...codes, skpd.KDSKPD]);
-                        }
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!selectedSkpdCodes.includes(skpd.KDSKPD)) {
-                          e.currentTarget.style.backgroundColor = '#fafafa';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!selectedSkpdCodes.includes(skpd.KDSKPD)) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px' }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedSkpdCodes.includes(skpd.KDSKPD)}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            if (e.target.checked) {
-                              setSelectedSkpdCodes(codes => [...codes, skpd.KDSKPD]);
-                            } else {
-                              setSelectedSkpdCodes(codes => codes.filter(code => code !== skpd.KDSKPD));
+                  ) : (
+                    (() => {
+                      const availableSatker = (allSatker || []).filter(satker => !selectedSatkerCodes.includes(satker.KDSATKER));
+                      return availableSatker.length === 0 ? (
+                        <div style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          padding: '32px 0', 
+                          textAlign: 'center' 
+                        }}>
+                          <div style={{ fontSize: '32px', marginBottom: '8px' }}>
+                            {selectedSatkerCodes.length > 0 ? '✅' : '🏢'}
+                          </div>
+                          <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
+                            {selectedSatkerCodes.length > 0 
+                              ? 'Semua Satker sudah dipilih' 
+                              : satkerSearch 
+                                ? 'Tidak ada Satker yang ditemukan' 
+                                : 'Tidak ada Satker tersedia'
                             }
-                          }}
-                          style={{ borderRadius: '4px' }}
-                        />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: '500', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {skpd.NMSKPD}
+                          </p>
                         </div>
-                        <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {skpd.KDSKPD} - {skpd.StatusSKPD}
-                        </div>
-                      </div>
+                      ) : (
+                        availableSatker.map((satker) => (
+                          <div
+                            key={satker.KDSATKER}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '12px',
+                              borderBottom: '1px solid #f0f0f0',
+                              cursor: 'pointer',
+                              transition: 'background-color 0.2s'
+                            }}
+                            onClick={() => {
+                              setSelectedSatkerCodes(codes => [...codes, satker.KDSATKER]);
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f0f9ff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                          >
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              width: '24px', 
+                              height: '24px',
+                              borderRadius: '4px',
+                              backgroundColor: '#1890ff',
+                              color: 'white',
+                              fontSize: '12px',
+                              fontWeight: 'bold'
+                            }}>
+                              +
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: '500', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {satker.NMSATKER}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {satker.KDSATKER} - {satker.JENIS_JABATAN}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      );
+                    })()
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Satker Terpilih */}
+            <div>
+              <label style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                Satker Terpilih ({selectedSatkerCodes.length} Satker)
+              </label>
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ maxHeight: '192px', overflowY: 'auto' }}>
+                  {selectedSatkerCodes.length === 0 ? (
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      padding: '32px 0', 
+                      textAlign: 'center' 
+                    }}>
+                      <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
+                      <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
+                        Belum ada Satker yang dipilih
+                      </p>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    selectedSatkerCodes.map((code) => {
+                      const satker = (allSatker || []).find(s => s.KDSATKER === code);
+                      return satker ? (
+                        <div
+                          key={code}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px',
+                            backgroundColor: '#f6ffed',
+                            borderBottom: '1px solid #f0f0f0',
+                            borderLeft: '4px solid #52c41a'
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: '500', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {satker.NMSATKER}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {satker.KDSATKER} - {satker.JENIS_JABATAN}
+                            </div>
+                          </div>
+                          <div 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center', 
+                              width: '24px', 
+                              height: '24px',
+                              borderRadius: '4px',
+                              backgroundColor: '#ff4d4f',
+                              color: 'white',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onClick={() => {
+                              setSelectedSatkerCodes(codes => codes.filter(c => c !== code));
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#ff7875';
+                              e.currentTarget.style.transform = 'scale(1.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#ff4d4f';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                            title="Hapus dari daftar"
+                          >
+                            ×
+                          </div>
+                        </div>
+                      ) : null;
+                    })
+                  )}
+                </div>
               </div>
             </div>
           </div>
         )}
 
         <Form.Item
-          name="kdskpd_list"
-          label="SKPD Terpilih"
-          help={selectedSkpdCodes.length > 0 ? `${selectedSkpdCodes.length} SKPD terpilih` : 'Pilih lokasi terlebih dahulu untuk memilih SKPD'}
+          name="kdsatker_list"
+          help={selectedSatkerCodes.length > 0 ? `${selectedSatkerCodes.length} Satker terpilih` : 'Pilih lokasi terlebih dahulu untuk memilih Satker'}
+          style={{ display: 'none' }}
         >
           <Input 
-            value={selectedSkpdCodes.join(', ')} 
+            value={selectedSatkerCodes.join(', ')} 
             readOnly 
-            placeholder="SKPD yang dipilih akan muncul di sini" 
-            style={{ backgroundColor: '#f5f5f5' }}
           />
         </Form.Item>
       </Form>

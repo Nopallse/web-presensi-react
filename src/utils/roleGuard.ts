@@ -25,6 +25,7 @@ export const roleGuard = {
         'pegawai',
         'skpd',
         'unit-kerja',
+        'unit-kerja-v2',
         'lokasi',
         'kegiatan',
         'presensi',
@@ -36,6 +37,7 @@ export const roleGuard = {
         'pegawai',
         'skpd',
         'unit-kerja',
+        'unit-kerja-v2',
         'lokasi',
         'presensi',
         'device-reset'
@@ -62,18 +64,19 @@ export const roleGuard = {
       super_admin: [
         { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
-        { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
-        { label: 'Lokasi', path: '/lokasi', icon: 'MapPin' },
-        { label: 'Kegiatan', path: '/kegiatan', icon: 'Calendar' },
-        { label: 'Presensi', path: '/presensi', icon: 'Clock' },
+        // { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
+        { label: 'Unit Kerja', path: '/unit-kerja-v2', icon: 'Sitemap' },
         {
-          label: 'Jam Dinas',
-          icon: 'Timer',
+          label: 'Kegiatan',
+          icon: 'Calendar',
           children: [
-            { label: 'Kelola Jam Dinas', path: '/jam-dinas/kelola' },
-            { label: 'Jam Dinas per Organisasi', path: '/jam-dinas/organisasi' }
+            { label: 'Kelola Kegiatan', path: '/kegiatan' },
+            { label: 'Kelola Lokasi Kegiatan', path: '/lokasi' }
           ]
         },
+        { label: 'Presensi', path: '/presensi', icon: 'Clock' },
+        { label: 'Jam Dinas', path: '/jam-dinas', icon: 'Timer' },
+     
         { label: 'Admin Logs', path: '/admin-logs', icon: 'FileText' },
         { label: 'Pengaturan', path: '/pengaturan', icon: 'Settings' }
       ],
@@ -82,6 +85,7 @@ export const roleGuard = {
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
         { label: 'SKPD', path: '/skpd', icon: 'Building' },
         { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
+        { label: 'Unit Kerja V2', path: '/unit-kerja-v2', icon: 'Building' },
         { label: 'Lokasi', path: '/lokasi', icon: 'MapPin' },
         { label: 'Presensi', path: '/presensi', icon: 'Clock' },
         { label: 'Reset Device', path: '/device-reset', icon: 'Mobile' }

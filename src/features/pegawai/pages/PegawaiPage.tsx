@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Card, 
   Table, 
@@ -6,25 +7,31 @@ import {
   Input, 
   Typography, 
   message,
-  Tag
+  Space,
+  Row,
+  Col,
+  Select,
+  Tooltip
 } from 'antd';
 import { 
   SearchOutlined,
   ReloadOutlined,
-  EyeOutlined
+  EyeOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { useAuth } from '../../../store/authStore';
 import { pegawaiApi } from '../services/pegawaiApi';
-import { unitKerjaApi } from '../../unit-kerja/services/unitKerjaApi';
+// unitKerjaApi removed: options now fetched via pegawaiApi option endpoints
 import type { Pegawai, PegawaiFilters } from '../types';
-import DebounceSelect from '../../../components/DebounceSelect';
 
 const { Title } = Typography;
 const { Search } = Input;
+const { Option } = Select;
 
 const PegawaiPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [pegawaiList, setPegawaiList] = useState<Pegawai[]>([]);
   const [pagination, setPagination] = useState({
@@ -33,16 +40,16 @@ const PegawaiPage: React.FC = () => {
     total: 0,
   });
   const [filters, setFilters] = useState<PegawaiFilters>({});
-  const [selectedSKPD, setSelectedSKPD] = useState<{ label: string; value: string } | null>(null);
-  const [tableFilters, setTableFilters] = useState<Record<string, any>>({});
+  
+  // Filter options state
+  const [satkerOptions, setSatkerOptions] = useState<Array<{label: string, value: string}>>([]);
+  const [bidangOptions, setBidangOptions] = useState<Array<{label: string, value: string}>>([]);
+  const [loadingSatker, setLoadingSatker] = useState(false);
+  const [loadingBidang, setLoadingBidang] = useState(false);
 
   // Check if user is super admin
   console.log('User role:', user?.role);
   const isSuperAdmin = user?.role === 'super_admin';
-
-  // Status constants
-  const AKTIF = 10;
-  const TDKAKTIF = 11;
 
   const columns: ColumnsType<Pegawai> = [
     {
@@ -61,33 +68,58 @@ const PegawaiPage: React.FC = () => {
       render: (nama: string) => <strong style={{ fontSize: '13px' }}>{nama || '-'}</strong>,
     },
     {
-      title: 'Kode SKPD',
-      dataIndex: 'kdskpd',
-      key: 'kdskpd',
-      width: 100,
-      render: (kdskpd: string) => <code style={{ fontSize: '11px' }}>{kdskpd || '-'}</code>,
+      title: 'Kode Unit Kerja',
+      dataIndex: 'kd_unit_kerja',
+      key: 'kd_unit_kerja',
+      width: 150,
+      render: (kd_unit_kerja: string) => {
+        if (!kd_unit_kerja) return '-';
+        return (
+          <code style={{ fontSize: '11px' }}>{kd_unit_kerja}</code>
+        );
+      },
     },
     {
-      title: 'SKPD',
-      key: 'skpd_nama',
-      width: 200,
+      title: 'Nama Unit Kerja',
+      dataIndex: 'nm_unit_kerja',
+      key: 'nm_unit_kerja',
+      width: 250,
       ellipsis: true,
-      render: (_, record: Pegawai) => record.skpd?.nmskpd || '-',
+      render: (nm_unit_kerja: string) => {
+        if (!nm_unit_kerja) return '-';
+        return (
+          <Tooltip title={nm_unit_kerja}>
+            <span style={{ fontSize: '12px' }}>{nm_unit_kerja}</span>
+          </Tooltip>
+        );
+      },
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      title: 'Satker',
+      dataIndex: 'kdsatker',
+      key: 'kdsatker',
       width: 100,
-      filters: [
-        { text: 'Aktif', value: AKTIF },
-        { text: 'Non-Aktif', value: TDKAKTIF },
-      ],
-      render: (status: string | number) => {
-        const isActive = status === AKTIF || status === '10' || status === 10;
-        const color = isActive ? 'green' : 'red';
-        const text = isActive ? 'AKTIF' : 'NON-AKTIF';
-        return <Tag color={color} style={{ fontSize: '11px' }}>{text}</Tag>;
+      render: (kdsatker: string, record: Pegawai) => {
+        if (!kdsatker) return '-';
+        return (
+          <Tooltip title={record.satker?.nmsatker || 'Nama Satker tidak tersedia'}>
+            <code style={{ fontSize: '11px', cursor: 'help' }}>{kdsatker}</code>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: 'Bidang',
+      dataIndex: 'bidangf',
+      key: 'bidangf',
+      width: 100,
+      render: (bidangf: string, record: Pegawai) => {
+        if (!bidangf) return '-';
+        return (
+          <Tooltip title={record.bidang?.nmbidang || 'Nama Bidang tidak tersedia'}>
+            <code style={{ fontSize: '11px', cursor: 'help' }}>{bidangf}</code>
+          </Tooltip>
+        );
       },
     },
     {
@@ -109,16 +141,10 @@ const PegawaiPage: React.FC = () => {
   const fetchPegawai = async () => {
     setLoading(true);
     try {
-      // Combine regular filters with table filters
-      const allFilters = {
-        ...filters,
-        ...tableFilters,
-      };
-      
-      console.log('Fetching pegawai with filters:', allFilters); // Log untuk debugging
+      console.log('Fetching pegawai with filters:', filters); // Log untuk debugging
       
       const response = await pegawaiApi.getAll({
-        ...allFilters,
+        ...filters,
         page: pagination.current,
         limit: pagination.pageSize,
       });
@@ -137,26 +163,20 @@ const PegawaiPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchPegawai();
-  }, [pagination.current, pagination.pageSize, filters, tableFilters]);
+    if (isSuperAdmin) {
+      fetchPegawai();
+      fetchSatkerOptions(undefined);
+    }
+  }, [isSuperAdmin, pagination.current, pagination.pageSize, filters]);
 
   const handleTableChange = (
-    pagination: TablePaginationConfig,
-    filters: Record<string, any>
+    pagination: TablePaginationConfig
   ) => {
     setPagination(prev => ({
       ...prev,
       current: pagination.current || 1,
       pageSize: pagination.pageSize || 10,
     }));
-
-    // Update table filters from Ant Design table filters
-    const newTableFilters: Record<string, any> = {};
-    if (filters.status && filters.status.length > 0) {
-      // Convert to number for backend
-      newTableFilters.status = Number(filters.status[0]);
-    }
-    setTableFilters(newTableFilters);
   };
 
   const handleSearch = (value: string) => {
@@ -164,52 +184,92 @@ const PegawaiPage: React.FC = () => {
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
-  const handleSKPDFilter = (value: { label: string; value: string } | { label: string; value: string }[] | null) => {
-    const singleValue = Array.isArray(value) ? value[0] : value;
-    setSelectedSKPD(singleValue);
-    setFilters(prev => ({ ...prev, kdskpd: singleValue?.value || undefined }));
+  const handleSatkerFilter = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      id_satker: value || undefined,
+      bidangf: undefined, // Reset bidang when Satker changes
+    }));
+    setBidangOptions([]);
+    setPagination(prev => ({ ...prev, current: 1 }));
+    
+    // Jika memilih Satker yang bukan null, fetch bidang options
+    if (value && value !== 'null') {
+      fetchBidangOptions(value, undefined);
+    }
+  };
+
+  const handleBidangFilter = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      bidangf: value || undefined,
+    }));
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const handleDetail = (pegawai: Pegawai) => {
-    // TODO: Navigate to detail page or show detail modal
-    console.log('View detail for:', pegawai);
-    message.info(`Detail untuk ${pegawai.nama} - fitur akan segera tersedia`);
+    navigate(`/pegawai/${pegawai.id}`);
   };
+
+  // Fetch Satker options (Level 1)
+  const fetchSatkerOptions = async (search?: string) => {
+    try {
+      setLoadingSatker(true);
+      const optionsFromApi = await pegawaiApi.getSatkerOptions(search, 1, 50);
+      const options = [
+        { label: '🚫 Tanpa Satker', value: 'null' },
+        ...optionsFromApi,
+      ];
+      setSatkerOptions(options);
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
+      setSatkerOptions([]);
+    } finally {
+      setLoadingSatker(false);
+    }
+  };
+
+  // Fetch Bidang options based on selected Satker (Level 2)
+  const fetchBidangOptions = async (kdSatker: string, search?: string) => {
+    try {
+      setLoadingBidang(true);
+      const optionsFromApi = await pegawaiApi.getBidangOptions(kdSatker, search, 1, 50);
+      const options = [
+        { label: '🚫 Tanpa Bidang', value: 'null' },
+        ...optionsFromApi,
+      ];
+      setBidangOptions(options);
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
+      setBidangOptions([{ label: '🚫 Tanpa Bidang', value: 'null' }]);
+    } finally {
+      setLoadingBidang(false);
+    }
+  };
+
 
   const handleClearFilters = () => {
     setFilters({});
-    setTableFilters({});
-    setSelectedSKPD(null);
+    setBidangOptions([]);
     setPagination(prev => ({ ...prev, current: 1 }));
     message.success('Filter berhasil dibersihkan');
   };
 
-  // Fetch SKPD options for filter
-  const fetchSKPDOptions = async (search: string) => {
-    try {
-      if (!isSuperAdmin) {
-        return [];
-      }
+  const hasActiveFilters = filters.search || filters.id_satker || filters.bidangf;
 
-      const response = await unitKerjaApi.getAllSkpd({
-        search: search || '',
-        page: 1,
-        limit: 20,
-      });
-
-      const options = response.data.map(skpd => ({
-        label: `${skpd.KDSKPD} - ${skpd.NMSKPD}`,
-        value: skpd.KDSKPD,
-      }));
-
-      return options;
-    } catch (error) {
-      console.error('Error fetching SKPD list:', error);
-      message.error('Gagal memuat daftar SKPD');
-      return [];
-    }
-  };
+  // Don't render if not super admin
+  if (!isSuperAdmin) {
+    return (
+      <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
+        <Card>
+          <div className="text-center py-8">
+            <Title level={4}>Akses Ditolak</Title>
+            <p>Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
@@ -221,50 +281,93 @@ const PegawaiPage: React.FC = () => {
           
         </div>
 
-        <div style={{ 
-          marginBottom: '16px', 
-          display: 'flex', 
-          gap: '12px', 
-          flexWrap: 'wrap',
-          alignItems: 'center'
-        }}>
-          <Search
-            placeholder="Cari nama pegawai atau NIP..."
-            allowClear
-            style={{ width: 250, minWidth: 200 }}
-            onSearch={handleSearch}
-            prefix={<SearchOutlined />}
-          />
-          
-          {isSuperAdmin && (
-            <DebounceSelect
-              placeholder="Filter SKPD"
-              style={{ width: 250, minWidth: 200 }}
+        <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Search
+              placeholder="Cari nama pegawai atau NIP..."
               allowClear
-              value={selectedSKPD}
-              onChange={handleSKPDFilter}
-              fetchOptions={fetchSKPDOptions}
-              debounceTimeout={500}
+              style={{ width: '100%' }}
+              onSearch={handleSearch}
+              prefix={<SearchOutlined />}
             />
-          )}
-
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={fetchPegawai}
-            loading={loading}
-          >
-            Refresh
-          </Button>
-
-          {(filters.search || filters.kdskpd || Object.keys(tableFilters).length > 0) && (
-            <Button
-              onClick={handleClearFilters}
-              type="dashed"
+          </Col>
+          
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Select
+              placeholder="Pilih Satker untuk filter data..."
+              allowClear
+              style={{ width: '100%' }}
+              value={filters.id_satker}
+              onChange={handleSatkerFilter}
+              loading={loadingSatker}
+              showSearch
+              optionFilterProp="children"
+              notFoundContent="Tidak ada data"
+              onSearch={(value) => fetchSatkerOptions(value)}
+              onFocus={() => {
+                if (satkerOptions.length === 0) {
+                  fetchSatkerOptions();
+                }
+              }}
             >
-              Clear Filter
-            </Button>
-          )}
-        </div>
+              {satkerOptions.map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Select
+              placeholder={filters.id_satker ? "Pilih Bidang untuk filter data..." : "Pilih Satker terlebih dahulu"}
+              allowClear
+              style={{ width: '100%' }}
+              value={filters.bidangf}
+              onChange={handleBidangFilter}
+              loading={loadingBidang}
+              disabled={!filters.id_satker}
+              showSearch
+              optionFilterProp="children"
+              notFoundContent="Tidak ada data"
+              onSearch={(value) => filters.id_satker && fetchBidangOptions(filters.id_satker, value)}
+              onFocus={() => {
+                if (bidangOptions.length === 0 && filters.id_satker) {
+                  fetchBidangOptions(filters.id_satker);
+                }
+              }}
+            >
+              {bidangOptions.map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
+              ))}
+            </Select>
+          </Col>
+
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Space>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={fetchPegawai}
+                loading={loading}
+              >
+                Refresh
+              </Button>
+
+              {hasActiveFilters && (
+                <Button
+                  icon={<ClearOutlined />}
+                  onClick={handleClearFilters}
+                  type="dashed"
+                >
+                  Clear Filter
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
 
         <Table
           columns={columns}

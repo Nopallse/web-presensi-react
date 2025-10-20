@@ -5,7 +5,6 @@ interface UIState {
   loading: boolean;
   notifications: Notification[];
   modals: Record<string, boolean>;
-  toasts: Toast[];
 }
 
 interface Notification {
@@ -17,16 +16,6 @@ interface Notification {
   read: boolean;
 }
 
-interface Toast {
-  id: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  duration?: number;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
 
 interface UIActions {
   setTheme: (theme: 'light' | 'dark') => void;
@@ -46,10 +35,6 @@ interface UIActions {
   toggleModal: (modalId: string) => void;
   closeAllModals: () => void;
   
-  // Toasts
-  showToast: (toast: Omit<Toast, 'id'>) => void;
-  removeToast: (id: string) => void;
-  clearToasts: () => void;
 }
 
 type UIStore = UIState & UIActions;
@@ -62,7 +47,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
   loading: false,
   notifications: [],
   modals: {},
-  toasts: [],
 
   // Actions
   setTheme: (theme: 'light' | 'dark') => {
@@ -146,33 +130,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
     }));
   },
 
-  // Toasts
-  showToast: (toast) => {
-    const newToast: Toast = {
-      ...toast,
-      id: generateId()
-    };
-    
-    set((state) => ({
-      toasts: [...state.toasts, newToast]
-    }));
-
-    // Auto-remove toast after duration
-    const duration = toast.duration || 5000;
-    setTimeout(() => {
-      get().removeToast(newToast.id);
-    }, duration);
-  },
-
-  removeToast: (id: string) => {
-    set((state) => ({
-      toasts: state.toasts.filter(toast => toast.id !== id)
-    }));
-  },
-
-  clearToasts: () => {
-    set({ toasts: [] });
-  }
 }));
 
 // Selectors for easier usage
@@ -212,9 +169,4 @@ export const useNotifications = () => {
 export const useModals = () => {
   const { modals, openModal, closeModal, toggleModal, closeAllModals } = useUIStore();
   return { modals, openModal, closeModal, toggleModal, closeAllModals };
-};
-
-export const useToasts = () => {
-  const { toasts, showToast, removeToast, clearToasts } = useUIStore();
-  return { toasts, showToast, removeToast, clearToasts };
 };

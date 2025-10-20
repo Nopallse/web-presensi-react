@@ -32,6 +32,61 @@ class PresensiApiService {
   }
 
   /**
+   * Get Satker options for dropdown
+   */
+  async getSatkerOptions(search?: string, page: number = 1, limit: number = 50): Promise<Array<{ label: string; value: string; }>> {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `/unit-kerja/options?${queryString}` : '/unit-kerja/options';
+
+    try {
+      const response = await apiClient.get<{ data: Array<{ KDSATKER: string; NMSATKER: string }> }>(url);
+      return [
+        { label: '🚫 Tanpa Satker', value: 'null' },
+        ...response.data.data.map((satker: any) => ({
+          label: `${satker.KDSATKER} - ${satker.NMSATKER}`,
+          value: satker.KDSATKER,
+        })),
+      ];
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get Bidang options for dropdown based on selected Satker
+   */
+  async getBidangOptions(idSatker: string, search?: string, page: number = 1, limit: number = 50): Promise<Array<{ label: string; value: string; }>> {
+    const params = new URLSearchParams();
+    params.append('satker', idSatker);
+    if (search) params.append('search', search);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+
+    const queryString = params.toString();
+    const url = queryString ? `/unit-kerja/options/bidang?${queryString}` : `/unit-kerja/options/bidang`;
+
+    try {
+      const response = await apiClient.get<{ data: Array<{ BIDANGF: string; NMBIDANG: string }> }>(url);
+      return [
+        { label: '🚫 Tanpa Bidang', value: 'null' },
+        ...response.data.data.map((bidang: any) => ({
+          label: `${bidang.BIDANGF} - ${bidang.NMBIDANG}`,
+          value: bidang.BIDANGF,
+        })),
+      ];
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
+      return [{ label: '🚫 Tanpa Bidang', value: 'null' }];
+    }
+  }
+
+  /**
    * Get all attendance records with filtering and pagination
    * Corresponds to: GET /kehadiran
    */
@@ -52,6 +107,12 @@ class PresensiApiService {
       
       // Add location filter
       if (filters.lokasi_id) params.append('lokasi_id', filters.lokasi_id);
+      
+      // Add satker filter
+      if (filters.satker) params.append('satker', filters.satker);
+      
+      // Add bidang filter
+      if (filters.bidang) params.append('bidang', filters.bidang);
       
       // Add status filter (for absen_apel or absen_sore)
       if (filters.status) params.append('status', filters.status);
@@ -134,7 +195,8 @@ class PresensiApiService {
       params.append('month', month.toString());
       
       // Add optional filters
-      if (filters.lokasi_id) params.append('lokasi_id', filters.lokasi_id);
+      if (filters.satker) params.append('satker', filters.satker);
+      if (filters.bidang) params.append('bidang', filters.bidang);
       if (filters.user_id) params.append('user_id', filters.user_id);
       if (filters.page) params.append('page', filters.page.toString());
       if (filters.limit) params.append('limit', filters.limit.toString());
@@ -160,6 +222,8 @@ class PresensiApiService {
       
       if (filters.tanggal) params.append('tanggal', filters.tanggal);
       if (filters.lokasi_id) params.append('lokasi_id', filters.lokasi_id);
+      if (filters.satker) params.append('satker', filters.satker);
+      if (filters.bidang) params.append('bidang', filters.bidang);
       if (filters.search) params.append('search', filters.search);
       if (filters.status) params.append('status', filters.status);
 
@@ -190,7 +254,8 @@ class PresensiApiService {
       
       if (filters.month) params.append('month', filters.month.toString());
       if (filters.year) params.append('year', filters.year.toString());
-      if (filters.lokasi_id) params.append('lokasi_id', filters.lokasi_id);
+      if (filters.satker) params.append('satker', filters.satker);
+      if (filters.bidang) params.append('bidang', filters.bidang);
       if (filters.user_id) params.append('user_id', filters.user_id);
 
       const response = await apiClient.get(

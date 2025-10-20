@@ -5,7 +5,6 @@ import {
   Button,
   Space,
   Input,
-  Select,
   Tag,
   Tooltip,
   message,
@@ -13,7 +12,10 @@ import {
   Row,
   Col,
   Divider,
-  Popconfirm
+  Radio,
+  Spin,
+  Popconfirm,
+  Modal
 } from 'antd';
 import {
   PlusOutlined,
@@ -24,14 +26,13 @@ import {
   ClockCircleOutlined
 } from '@ant-design/icons';
 import { jamDinasApi } from '../services/jamDinasApi';
-import type { 
-  JamDinas, 
-  JamDinasFilters, 
-  StatusJamDinas
-} from '../types';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../store/authStore';
+import { pengaturanApi } from '../../pengaturan/services/pengaturanApi';
 
+import { getTipeJadwalLabel, getTipeJadwalDescription } from '../../pengaturan/utils/tipeJadwalUtils';
+import type { TipeJadwalOption } from '../../pengaturan/types';
+import type { JamDinas, JamDinasFilters, StatusJamDinas } from '../types';
+import { useAuth } from '../../../store/authStore';
+import { useNavigate } from 'react-router-dom';
 const { Title, Text } = Typography;
 const { Search } = Input;
 
@@ -41,12 +42,19 @@ const JamDinasPage: React.FC = () => {
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
-    total: 0,
+    total: 0
   });
   const [filters, setFilters] = useState<JamDinasFilters>({
     page: 1,
-    limit: 10,
+    limit: 10
   });
+
+  // Tipe Jadwal State
+  const [tipeJadwalLoading, setTipeJadwalLoading] = useState(false);
+  const [tipeJadwalSaving, setTipeJadwalSaving] = useState(false);
+  const [currentTipeJadwal, setCurrentTipeJadwal] = useState<TipeJadwalOption>('normal');
+  const [selectedTipeJadwal, setSelectedTipeJadwal] = useState<TipeJadwalOption>('normal');
+  const [tipeJadwalModalOpen, setTipeJadwalModalOpen] = useState(false);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +63,7 @@ const JamDinasPage: React.FC = () => {
   useEffect(() => {
     if (isSuperAdmin) {
       fetchJamDinas();
+      fetchCurrentTipeJadwal();
     }
   }, [filters, isSuperAdmin]);
 
@@ -67,7 +76,7 @@ const JamDinasPage: React.FC = () => {
         current: response.pagination.currentPage,
         pageSize: response.pagination.itemsPerPage,
         total: response.pagination.totalItems,
-      });
+      }); // Corrected trailing comma
     } catch (error: any) {
       console.error('Error fetching jam dinas:', error);
       message.error('Gagal memuat data jam dinas');
@@ -75,6 +84,53 @@ const JamDinasPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Tipe Jadwal logic
+  const fetchCurrentTipeJadwal = async () => {
+    try {
+      setTipeJadwalLoading(true);
+      const response = await pengaturanApi.getCurrentTipeJadwal();
+      const tipe = response.data.tipe as TipeJadwalOption;
+      setCurrentTipeJadwal(tipe);
+      setSelectedTipeJadwal(tipe);
+    } catch (error: any) {
+      console.error('Error fetching tipe jadwal:', error);
+      message.error('Gagal memuat tipe jadwal');
+    } finally {
+      setTipeJadwalLoading(false);
+    }
+  };
+
+
+  const handleSaveTipeJadwal = async () => {
+    if (selectedTipeJadwal === currentTipeJadwal) {
+      setTipeJadwalModalOpen(false);
+      return;
+    }
+    try {
+      setTipeJadwalSaving(true);
+      const response = await pengaturanApi.updateTipeJadwal({ tipe: selectedTipeJadwal });
+      setCurrentTipeJadwal(selectedTipeJadwal);
+      message.success(response.message);
+      setTipeJadwalModalOpen(false);
+    } catch (error: any) {
+      console.error('Error updating tipe jadwal:', error);
+      message.error(error.response?.data?.message || 'Gagal menyimpan tipe jadwal');
+    } finally {
+      setTipeJadwalSaving(false);
+    }
+  };
+
+  const handleOpenTipeJadwalModal = () => {
+    setSelectedTipeJadwal(currentTipeJadwal);
+    setTipeJadwalModalOpen(true);
+  };
+
+  const handleCancelTipeJadwalModal = () => {
+    setTipeJadwalModalOpen(false);
+  };
+
+
 
   const handleSearch = (value: string) => {
     setFilters(prev => ({
@@ -84,13 +140,7 @@ const JamDinasPage: React.FC = () => {
     }));
   };
 
-  const handleStatusFilter = (status: StatusJamDinas | 'all') => {
-    setFilters(prev => ({
-      ...prev,
-      status: status === 'all' ? undefined : status,
-      page: 1,
-    }));
-  };
+
 
   const handleTableChange = (pagination: any) => {
     setFilters(prev => ({
@@ -111,16 +161,7 @@ const JamDinasPage: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (id: number) => {
-    try {
-      await jamDinasApi.toggleStatus(id);
-      message.success('Status jam dinas berhasil diubah');
-      fetchJamDinas();
-    } catch (error: any) {
-      console.error('Error toggling status:', error);
-      message.error(error.response?.data?.message || 'Gagal mengubah status');
-    }
-  };
+
 
   const showDetail = (id: number) => {
     navigate(`/jam-dinas/${id}`);
@@ -139,40 +180,30 @@ const JamDinasPage: React.FC = () => {
       title: 'Nama',
       dataIndex: 'nama',
       key: 'nama',
-      render: (nama: string, record: JamDinas) => (
-        <div>
-          <Text strong>{nama}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            ID: {record.id}
-          </Text>
-        </div>
+      render: (nama: string) => (
+        <Text strong style={{ fontSize: '14px' }}>{nama}</Text>
       ),
     },
     {
       title: 'Hari Kerja',
       dataIndex: 'hari_kerja',
       key: 'hari_kerja',
-      width: 120,
+      width: 140,
       render: (hari_kerja: number) => (
-        <div style={{ textAlign: 'center' }}>
-          <Text strong>{hari_kerja}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: '12px' }}>hari/minggu</Text>
-        </div>
+        <Text style={{ fontSize: '13px' }}>
+          {hari_kerja} hari/minggu
+        </Text>
       ),
     },
     {
       title: 'Durasi',
       dataIndex: 'menit',
       key: 'menit',
-      width: 120,
+      width: 140,
       render: (menit: number) => (
-        <div style={{ textAlign: 'center' }}>
-          <Text strong>{Math.floor(menit / 60)}:{(menit % 60).toString().padStart(2, '0')}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: '12px' }}>jam/hari</Text>
-        </div>
+        <Text style={{ fontSize: '13px' }}>
+          {Math.floor(menit / 60)}:{(menit % 60).toString().padStart(2, '0')} jam/hari
+        </Text>
       ),
     },
     {
@@ -206,20 +237,7 @@ const JamDinasPage: React.FC = () => {
               onClick={() => navigate(`/jam-dinas/${record.id}/edit`)}
             />
           </Tooltip>
-          <Tooltip title={record.status === 1 ? 'Nonaktifkan' : 'Aktifkan'}>
-            <Popconfirm
-              title={`${record.status === 1 ? 'Nonaktifkan' : 'Aktifkan'} jam dinas ini?`}
-              onConfirm={() => handleToggleStatus(record.id)}
-              okText="Ya"
-              cancelText="Batal"
-            >
-              <Button
-                type="text"
-                icon={<ClockCircleOutlined />}
-                style={{ color: record.status === 1 ? '#ff4d4f' : '#52c41a' }}
-              />
-            </Popconfirm>
-          </Tooltip>
+          
           <Tooltip title="Hapus">
             <Popconfirm
               title="Yakin ingin menghapus jam dinas ini?"
@@ -241,6 +259,7 @@ const JamDinasPage: React.FC = () => {
     },
   ];
 
+
   // Show access denied for non-super admin
   if (!isSuperAdmin) {
     return (
@@ -258,10 +277,92 @@ const JamDinasPage: React.FC = () => {
     );
   }
 
+
+  // Tipe Jadwal Card (Simple)
   return (
     <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
       <Row gutter={[16, 16]}>
         <Col span={24}>
+          {/* Tipe Jadwal Global Setting (Simple) */}
+          <Card style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <ClockCircleOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                <div>
+                  <Title level={4} style={{ margin: 0 }}>
+                    Tipe Jadwal Global
+                  </Title>
+                  <Text type="secondary">
+                    Tipe jadwal yang berlaku untuk seluruh sistem
+                  </Text>
+                </div>
+              </div>
+              <Button
+                type="default"
+                onClick={handleOpenTipeJadwalModal}
+                loading={tipeJadwalLoading}
+              >
+                Ganti Tipe Jadwal
+              </Button>
+            </div>
+            <Divider />
+            {tipeJadwalLoading ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: 16 }}>
+                  <Text type="secondary">Memuat tipe jadwal...</Text>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Text>Tipe Jadwal Aktif:</Text>
+                <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                  {getTipeJadwalLabel(currentTipeJadwal)}
+                </Text>
+              </div>
+            )}
+          </Card>
+          {/* Modal Dialog for Tipe Jadwal */}
+          <Modal
+            title="Ganti Tipe Jadwal Global"
+            open={tipeJadwalModalOpen}
+            onCancel={handleCancelTipeJadwalModal}
+            onOk={handleSaveTipeJadwal}
+            okText="Simpan"
+            cancelText="Batal"
+            confirmLoading={tipeJadwalSaving}
+          >
+            <Radio.Group
+              value={selectedTipeJadwal}
+              onChange={(e) => setSelectedTipeJadwal(e.target.value)}
+              style={{ width: '100%' }}
+            >
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Radio value="normal">
+                  <div>
+                    <div style={{ fontWeight: 'bold' }}>{getTipeJadwalLabel('normal')}</div>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      {getTipeJadwalDescription('normal')}
+                    </Text>
+                  </div>
+                </Radio>
+                <Radio value="ramadhan">
+                  <div>
+                    <div style={{ fontWeight: 'bold' }}>{getTipeJadwalLabel('ramadhan')}</div>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      {getTipeJadwalDescription('ramadhan')}
+                    </Text>
+                  </div>
+                </Radio>
+              </Space>
+            </Radio.Group>
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Perubahan tipe jadwal akan mempengaruhi seluruh sistem presensi.
+              </Text>
+            </div>
+          </Modal>
+
           <Card>
             {/* Header */}
             <div style={{ marginBottom: 16 }}>
@@ -306,19 +407,7 @@ const JamDinasPage: React.FC = () => {
                   style={{ width: '100%' }}
                 />
               </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Select
-                  placeholder="Filter status"
-                  allowClear
-                  style={{ width: '100%' }}
-                  onChange={handleStatusFilter}
-                  options={[
-                    { label: 'Semua Status', value: 'all' },
-                    { label: 'Aktif', value: 1 },
-                    { label: 'Tidak Aktif', value: 0 },
-                  ]}
-                />
-              </Col>
+              
             </Row>
 
             {/* Table */}

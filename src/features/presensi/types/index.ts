@@ -9,30 +9,66 @@ export interface User {
   status: string;
 }
 
-// Lokasi interface for Kehadiran
+// Lokasi interface for Kehadiran (updated for new response structure)
 export interface Lokasi {
-  lokasi_id: string;
-  lat: string;
-  lng: string;
-  range?: number;
+  lokasi_id: number;
+  lat: number;
+  lng: number;
   ket: string;
-  status?: string;
+  range?: number;
+  status?: boolean;
 }
 
-// Main Kehadiran entity based on backend model
+// SKPD interface for Pegawai
+export interface SKPD {
+  kdskpd: string;
+  nmskpd: string;
+  status_skpd: string;
+}
+
+// Pegawai interface for Kehadiran (updated for new response structure)
+export interface Pegawai {
+  nip: string;
+  nama: string;
+  jenis_pegawai?: string;
+  status_aktif?: string;
+  email?: string;
+  skpd?: SKPD;
+}
+
+// Satker interface
+export interface Satker {
+  kdsatker: string;
+  nmsatker: string;
+}
+
+// Bidang interface
+export interface Bidang {
+  bidangf: string;
+  nmbidang: string;
+}
+
+// Sub Bidang interface
+export interface SubBidang {
+  subf: string;
+  nmsub: string;
+}
+
+// Main Kehadiran entity based on backend model (updated for new response structure)
 export interface Kehadiran {
-  absen_id: string;
-  absen_nip: string;
-  lokasi_id: string;
-  absen_tgl: string; // Date string in YYYY-MM-DD format
-  absen_tgljam: string; // DateTime string
-  absen_checkin?: string; // Time string for check-in
-  absen_checkout?: string; // Time string for check-out
-  absen_kat: string; // Kategori kehadiran (HADIR, etc.)
-  absen_apel?: 'HAP' | 'TAP' | null; // Hadir Apel Pagi | Telat Apel Pagi
-  absen_sore?: 'HAS' | 'CP' | null; // Hadir Apel Sore | Cepat Pulang
-  User?: User;
-  Lokasi?: Lokasi;
+  pegawai: {
+    nip: string;
+    nama: string;
+    kdsatker: string;
+    bidangf: string;
+    subf: string;
+    nm_unit_kerja: string;
+  };
+  absen_checkin: string;
+  absen_checkout: string;
+  absen_apel: string;
+  absen_sore: string;
+  absen_tgl: string;
 }
 
 // API response interfaces
@@ -60,6 +96,8 @@ export interface KehadiranFilters {
   startDate?: string;
   endDate?: string;
   lokasi_id?: string;
+  satker?: string;
+  bidang?: string;
   status?: 'HAP' | 'TAP' | 'HAS' | 'CP'; // Status untuk filter absen_apel atau absen_sore
 }
 
@@ -67,7 +105,8 @@ export interface KehadiranFilters {
 export interface MonthlyAttendanceFilters {
   year?: number;
   month?: number;
-  lokasi_id?: string;
+  satker?: string;
+  bidang?: string;
   user_id?: string;
   page?: number;
   limit?: number;
@@ -116,6 +155,8 @@ export interface ExportFilters {
   // For daily export (harian)
   tanggal?: string;
   lokasi_id?: string;
+  satker?: string;
+  bidang?: string;
   search?: string;
   status?: 'HAP' | 'TAP' | 'HAS' | 'CP';
   
@@ -155,9 +196,6 @@ export interface PresensiPageProps {
   title?: string;
 }
 
-export interface PresensiDetailProps {
-  id: string;
-}
 
 export interface MonthlyViewProps {
   initialYear?: number;
@@ -181,6 +219,8 @@ export interface FilterState {
   search: string;
   selectedDate: string | null; // Changed from dateRange to single date
   lokasi_id: string;
+  satker: string;
+  bidang: string;
   status: string;
   pagination: {
     current: number;

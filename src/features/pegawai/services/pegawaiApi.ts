@@ -1,6 +1,12 @@
 import { apiClient } from '../../../services/apiService';
 import { useAuthStore } from '../../../store/authStore';
-import type { PegawaiListResponse, PegawaiFilters, Pegawai } from '../types';
+import type { 
+  PegawaiListResponse, 
+  PegawaiFilters, 
+  Pegawai, 
+  KehadiranListResponse,
+  KehadiranFilters 
+} from '../types';
 
 export const pegawaiApi = {
   // Get all pegawai (role-based endpoint)
@@ -9,9 +15,10 @@ export const pegawaiApi = {
     
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
-    if (filters.kdskpd) params.append('id_skpd', filters.kdskpd);
     if (filters.search) params.append('search', filters.search);
     if (filters.status !== undefined) params.append('status', filters.status);
+    if (filters.id_satker) params.append('id_satker', filters.id_satker);
+    if (filters.bidangf) params.append('bidangf', filters.bidangf);
 
     // Get user role to determine endpoint
     const { user } = useAuthStore.getState();
@@ -28,13 +35,34 @@ export const pegawaiApi = {
     return response.data;
   },
 
-  // Get pegawai by ID
+  // Get pegawai by ID (detail)
   getById: async (id: string): Promise<Pegawai> => {
     const { user } = useAuthStore.getState();
     const isSuperAdmin = user?.role === 'super_admin';
     const endpoint = isSuperAdmin ? `/superadmin/users/${id}` : `/admin/users/${id}`;
     
     const response = await apiClient.get<Pegawai>(endpoint);
+    return response.data;
+  },
+
+  // Get kehadiran by user ID
+  getKehadiranByUserId: async (userId: string, filters: KehadiranFilters = {}): Promise<KehadiranListResponse> => {
+    const params = new URLSearchParams();
+    
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.startDate) params.append('start_date', filters.startDate);
+    if (filters.endDate) params.append('end_date', filters.endDate);
+    if (filters.sort) params.append('sort', filters.sort);
+
+    const { user } = useAuthStore.getState();
+    const isSuperAdmin = user?.role === 'super_admin';
+    const endpoint = isSuperAdmin ? `/superadmin/kehadiran/user/${userId}` : `/admin/kehadiran/user/${userId}`;
+    
+    const queryString = params.toString();
+    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+    
+    const response = await apiClient.get<KehadiranListResponse>(url);
     return response.data;
   },
 
@@ -79,6 +107,60 @@ export const pegawaiApi = {
       }));
     } catch (error) {
       console.error('Error fetching SKPD:', error);
+      return [];
+    }
+  },
+
+  // Get Satker options for dropdown (uses /unit-kerja/options)
+  getSatkerOptions: async (
+    search?: string,
+    page: number = 1,
+    limit: number = 50
+  ): Promise<Array<{ label: string; value: string }>> => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (search && search.trim()) params.append('search', search.trim());
+
+    const queryString = params.toString();
+    const url = `/unit-kerja/options${queryString ? `?${queryString}` : ''}`;
+
+    try {
+      const response = await apiClient.get<{ data: Array<{ KDSATKER: string; NMSATKER: string }> }>(url);
+      return response.data.data.map((item) => ({
+        label: `${item.KDSATKER} - ${item.NMSATKER}`,
+        value: item.KDSATKER,
+      }));
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
+      return [];
+    }
+  },
+
+  // Get Bidang options based on selected Satker (uses /unit-kerja/options/bidang)
+  getBidangOptions: async (
+    satker: string,
+    search?: string,
+    page: number = 1,
+    limit: number = 50
+  ): Promise<Array<{ label: string; value: string }>> => {
+    const params = new URLSearchParams();
+    params.append('satker', satker);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (search && search.trim()) params.append('search', search.trim());
+
+    const queryString = params.toString();
+    const url = `/unit-kerja/options/bidang${queryString ? `?${queryString}` : ''}`;
+
+    try {
+      const response = await apiClient.get<{ data: Array<{ BIDANGF: string; NMBIDANG: string }> }>(url);
+      return response.data.data.map((item) => ({
+        label: `${item.BIDANGF} - ${item.NMBIDANG}`,
+        value: item.BIDANGF,
+      }));
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
       return [];
     }
   }

@@ -1,7 +1,7 @@
 import axiosInstance from './axiosInstance';
 import { useAuthStore } from '../store/authStore';
-import { useUIStore } from '../store/uiStore';
 import { isInvalidRefreshTokenError, handleAuthError } from '../utils/authUtils';
+import { notificationService } from '../utils/messageService';
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
@@ -57,7 +57,6 @@ axiosInstance.interceptors.response.use(
   },
   async (error) => {
     const { response, config } = error;
-    const { showToast } = useUIStore.getState();
     const { logout, refreshAccessToken } = useAuthStore.getState();
 
     // Handle 401 errors with token refresh
@@ -68,10 +67,7 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false; // Reset refresh state
         processQueue(error, null); // Clear the queue
         logout();
-        showToast({
-          message: 'Sesi Anda telah berakhir. Silakan login kembali.',
-          type: 'error'
-        });
+        notificationService.error('Sesi Anda telah berakhir. Silakan login kembali.');
         setTimeout(() => {
           window.location.href = '/login';
         }, 100);
@@ -116,17 +112,11 @@ axiosInstance.interceptors.response.use(
         processQueue(refreshError, null);
         
         if (isInvalidRefreshTokenError(refreshError)) {
-          showToast({
-            message: 'Sesi Anda telah berakhir. Silakan login kembali.',
-            type: 'error'
-          });
+          notificationService.error('Sesi Anda telah berakhir. Silakan login kembali.');
           logout();
           handleAuthError();
         } else {
-          showToast({
-            message: 'Gagal memperbarui sesi. Silakan login kembali.',
-            type: 'error'
-          });
+          notificationService.error('Gagal memperbarui sesi. Silakan login kembali.');
           logout();
           setTimeout(() => {
             window.location.href = '/login';
@@ -144,65 +134,41 @@ axiosInstance.interceptors.response.use(
       switch (response.status) {
         case 403:
           // Forbidden - insufficient permissions
-          showToast({
-            message: 'Anda tidak memiliki izin untuk mengakses resource ini.',
-            type: 'error'
-          });
+          notificationService.error('Anda tidak memiliki izin untuk mengakses resource ini.');
           break;
 
         case 404:
           // Not found
-          showToast({
-            message: 'Resource yang diminta tidak ditemukan.',
-            type: 'error'
-          });
+          notificationService.error('Resource yang diminta tidak ditemukan.');
           break;
 
         case 422:
           // Validation error
           const validationMessage = response.data?.message || 'Data yang diinput tidak valid.';
-          showToast({
-            message: validationMessage,
-            type: 'error'
-          });
+          notificationService.error(validationMessage);
           break;
 
         case 429:
           // Too many requests
-          showToast({
-            message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.',
-            type: 'warning'
-          });
+          notificationService.warning('Terlalu banyak permintaan. Silakan coba lagi nanti.');
           break;
 
         case 500:
           // Internal server error
-          showToast({
-            message: 'Terjadi kesalahan pada server. Silakan coba lagi nanti.',
-            type: 'error'
-          });
+          notificationService.error('Terjadi kesalahan pada server. Silakan coba lagi nanti.');
           break;
 
         default:
           // Generic error
           const errorMessage = response.data?.message || response.data?.error || 'Terjadi kesalahan. Silakan coba lagi.';
-          showToast({
-            message: errorMessage,
-            type: 'error'
-          });
+          notificationService.error(errorMessage);
       }
     } else if (error.request) {
       // Network error
-      showToast({
-        message: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
-        type: 'error'
-      });
+      notificationService.error('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
     } else {
       // Other error
-      showToast({
-        message: 'Terjadi kesalahan yang tidak diketahui.',
-        type: 'error'
-      });
+      notificationService.error('Terjadi kesalahan yang tidak diketahui.');
     }
 
     return Promise.reject(error);

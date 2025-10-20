@@ -149,89 +149,99 @@ const Sidebar: React.FC = () => {
       
     >
 
-      {/* Toggle Button */}
-      <div style={{ 
-        padding: isCollapsed ? '12px 0' : '12px 16px',
-        borderBottom: '1px solid #f0f0f0',
-        display: 'flex',
-        justifyContent: isCollapsed ? 'center' : 'flex-end'
-      }}>
-        <Button
-          type="text"
-          icon={isCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={handleToggle}
-          style={{
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        />
-      </div>
-
-      {/* User Profile Section - Top */}
+      {/* Header Section - Profile & Toggle */}
       {user && (
         <div style={{ borderBottom: '1px solid #f0f0f0' }}>
           {!isCollapsed ? (
-            // Expanded User Section
+            // Expanded Header Section - Profile + Toggle Button in one row
             <div style={{ padding: '20px 16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Avatar
-                  size={48}
-                  style={{ 
-                    backgroundColor: getRoleColor(user.role),
-                    fontSize: '18px',
-                    fontWeight: 'bold'
-                  }}
-                  icon={!user.name && <UserOutlined />}
-                >
-                  {user.name?.charAt(0)?.toUpperCase()}
-                </Avatar>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Text strong style={{ 
-                    fontSize: '16px', 
-                    display: 'block',
-                    color: '#262626',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    marginBottom: '2px'
-                  }}>
-                    {user.name}
-                  </Text>
-                  <Text style={{ 
-                    fontSize: '13px', 
-                    color: getRoleColor(user.role),
-                    fontWeight: 500,
-                    display: 'block',
-                    marginBottom: '4px'
-                  }}>
-                    {getRoleDisplayName(user.role)}
-                  </Text>
-                  
-                  {/* Show admin_opd information if available */}
-                  {user.admin_opd && (
-                    <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.3' }}>
-                      {user.admin_opd.id_skpd && (
-                        <div>SKPD: {user.admin_opd.id_skpd}</div>
-                      )}
-                      {user.admin_opd.id_satker && (
-                        <div>Satker: {user.admin_opd.id_satker}</div>
-                      )}
-                      {user.admin_opd.id_bidang && (
-                        <div>Bidang: {user.admin_opd.id_bidang}</div>
-                      )}
-                    </div>
-                  )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
+                {/* User Profile */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                  <Avatar
+                    size={48}
+                    style={{ 
+                      backgroundColor: getRoleColor(user.role),
+                      fontSize: '18px',
+                      fontWeight: 'bold'
+                    }}
+                    icon={!user.name && <UserOutlined />}
+                  >
+                    {user.name?.charAt(0)?.toUpperCase()}
+                  </Avatar>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Text strong style={{ 
+                      fontSize: '16px', 
+                      display: 'block',
+                      color: '#262626',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      marginBottom: '2px'
+                    }}>
+                      {user.name}
+                    </Text>
+                    <Text style={{ 
+                      fontSize: '13px', 
+                      color: getRoleColor(user.role),
+                      fontWeight: 500,
+                      display: 'block',
+                      marginBottom: '4px'
+                    }}>
+                      {getRoleDisplayName(user.role)}
+                    </Text>
+                    
+                    {/* Show admin_opd information if available */}
+                    {user.admin_opd && (
+                      <div style={{ fontSize: '11px', color: '#666', lineHeight: '1.3' }}>
+                        {user.admin_opd.id_skpd && (
+                          <div>SKPD: {user.admin_opd.id_skpd}</div>
+                        )}
+                        {user.admin_opd.id_satker && (
+                          <div>Satker: {user.admin_opd.id_satker}</div>
+                        )}
+                        {user.admin_opd.id_bidang && (
+                          <div>Bidang: {user.admin_opd.id_bidang}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
+                
+                {/* Toggle Button */}
+                <Button
+                  type="text"
+                  icon={<MenuFoldOutlined />}
+                  onClick={handleToggle}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                />
               </div>
-              
-           
             </div>
           ) : (
-            // Collapsed User Section
-            <div style={{ padding: '20px 0', display: 'flex', justifyContent: 'center' }}>
+            // Collapsed Header Section - Avatar + Toggle Button
+            <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              {/* Toggle Button */}
+              <Button
+                type="text"
+                icon={<MenuUnfoldOutlined />}
+                onClick={handleToggle}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              />
+              
+              {/* User Avatar */}
               <Dropdown 
                 menu={{ items: userMenuItems.slice(0, -2) }} // Exclude divider and logout
                 placement="bottomRight"

@@ -10,7 +10,7 @@ import LoginPage from '../features/auth/pages/LoginPage';
 import DashboardPage from '../features/dashboard/pages/DashboardPage';
 
 // Pegawai
-import { PegawaiPage } from '../features/pegawai';
+import { PegawaiPage, PegawaiDetail } from '../features/pegawai';
 
 // Lokasi
 import LokasiPage from '../features/lokasi/pages/LokasiPage';
@@ -20,19 +20,27 @@ import LokasiEdit from '../features/lokasi/pages/LokasiEdit';
 
 // Kegiatan
 import { KegiatanPage, KegiatanDetail, KegiatanCreate, KegiatanEdit } from '../features/kegiatan';
+import SatkerDetail from '../features/kegiatan/pages/SatkerDetail';
 
 // Unit Kerja
 import { UnitKerjaPage } from '../features/unit-kerja';
+import UnitKerjaDetail from '../features/unit-kerja/pages/UnitKerjaDetail';
+
+// Unit Kerja V2
+import UnitKerjaV2Page from '../features/unit-kerja/pages/UnitKerjaV2Page';
+import SatkerDetailPage from '../features/unit-kerja/pages/SatkerDetailPage';
+import BidangDetailPage from '../features/unit-kerja/pages/BidangDetailPage';
+import SubBidangDetailPage from '../features/unit-kerja/pages/SubBidangDetailPage';
 
 // Pengaturan
 import PengaturanPage from '../features/pengaturan/pages/PengaturanPage';
 
 // Jam Dinas
-import { JamDinasPage, JamDinasForm, JamDinasOrganisasiPage } from '../features/jam-dinas';
+import { JamDinasPage, JamDinasForm } from '../features/jam-dinas';
 const JamDinasDetail = React.lazy(() => import('../features/jam-dinas/pages/JamDinasDetail'));
 
 // Presensi
-import { PresensiPage, PresensiDetail, MonthlyPresensiPage } from '../features/presensi';
+import { PresensiPage, MonthlyPresensiPage } from '../features/presensi';
 
 // Device Reset
 import DeviceResetPage from '../features/device-reset/pages/DeviceResetPage';
@@ -99,7 +107,7 @@ const AppRoutes: React.FC = () => {
           path="/pegawai/:id"
           element={
             <ProtectedRoute>
-              <div>Pegawai Detail Page (Coming Soon)</div>
+              <PegawaiDetail />
             </ProtectedRoute>
           }
         />
@@ -119,6 +127,48 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <UnitKerjaPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/unit-kerja/:kd_unit_kerja"
+          element={
+            <ProtectedRoute>
+              <UnitKerjaDetail />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Unit Kerja V2 routes */}
+        <Route
+          path="/unit-kerja-v2"
+          element={
+            <ProtectedRoute>
+              <UnitKerjaV2Page />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/unit-kerja-v2/:idSatker"
+          element={
+            <ProtectedRoute>
+              <SatkerDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/unit-kerja-v2/:idSatker/:idBidang"
+          element={
+            <ProtectedRoute>
+              <BidangDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/unit-kerja-v2/:idSatker/:idBidang/:idSubBidang"
+          element={
+            <ProtectedRoute>
+              <SubBidangDetailPage />
             </ProtectedRoute>
           }
         />
@@ -190,6 +240,14 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/kegiatan/:id/satker/:satkerId"
+          element={
+            <ProtectedRoute>
+              <SatkerDetail />
+            </ProtectedRoute>
+          }
+        />
         
         {/* Presensi routes */}
         <Route
@@ -208,14 +266,7 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/presensi/:id"
-          element={
-            <ProtectedRoute>
-              <PresensiDetail />
-            </ProtectedRoute>
-          }
-        />
+       
         
         {/* Device Reset routes */}
         <Route
@@ -263,21 +314,14 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/jam-dinas/kelola"
+          path="/jam-dinas"
           element={
             <ProtectedRoute>
               <JamDinasPage />
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/jam-dinas/organisasi"
-          element={
-            <ProtectedRoute>
-              <JamDinasOrganisasiPage />
-            </ProtectedRoute>
-          }
-        />
+    
         
         {/* Admin Logs routes */}
         <Route

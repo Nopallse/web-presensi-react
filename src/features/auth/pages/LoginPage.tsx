@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
           {/* Logo Kota */}
           <div style={{ marginBottom: '24px' }}>
             <img 
-              src="/logo-kota.png" 
+              src="/logo.png" 
               alt="Logo Kota" 
               style={{
                 width: '80px',

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEffect } from 'react';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App, message } from 'antd';
 import { useAuthStore } from '../store/authStore';
 import { antdTheme } from '../config/antd-theme';
 import { isTokenExpired } from '../utils/tokenUtils';
@@ -9,6 +9,73 @@ import idID from 'antd/locale/id_ID';
 interface AppProvidersProps {
   children: React.ReactNode;
 }
+
+// Store original message methods
+const originalMessage = {
+  success: message.success,
+  error: message.error,
+  warning: message.warning,
+  info: message.info,
+};
+
+// Komponen untuk setup global notification
+const GlobalNotificationSetup: React.FC = () => {
+  const { notification } = App.useApp();
+
+  useEffect(() => {
+    // Override message methods dengan notification
+    (message as any).success = (content: string) => {
+      notification.success({
+        message: 'Berhasil',
+        description: content,
+        placement: 'topRight',
+        duration: 4,
+      });
+    };
+
+    (message as any).error = (content: string) => {
+      notification.error({
+        message: 'Error',
+        description: content,
+        placement: 'topRight',
+        duration: 5,
+      });
+    };
+
+    (message as any).warning = (content: string) => {
+      notification.warning({
+        message: 'Peringatan',
+        description: content,
+        placement: 'topRight',
+        duration: 4,
+      });
+    };
+
+    (message as any).info = (content: string) => {
+      notification.info({
+        message: 'Info',
+        description: content,
+        placement: 'topRight',
+        duration: 4,
+      });
+    };
+
+    // Set global notification untuk service/utility
+    (window as any).globalNotification = {
+      success: (message as any).success,
+      error: (message as any).error,
+      warning: (message as any).warning,
+      info: (message as any).info,
+    };
+
+    // Cleanup function
+    return () => {
+      Object.assign(message, originalMessage);
+    };
+  }, [notification]);
+
+  return null;
+};
 
 const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const { setLoading, logout, verifyAndRecoverUser, accessToken, refreshToken } = useAuthStore();
@@ -48,7 +115,17 @@ const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
       theme={antdTheme}
       locale={idID}
     >
-      {children}
+      <App
+        notification={{
+          placement: 'topRight',
+          top: 24,
+          duration: 4,
+          maxCount: 3,
+        }}
+      >
+        <GlobalNotificationSetup />
+        {children}
+      </App>
     </ConfigProvider>
   );
 };

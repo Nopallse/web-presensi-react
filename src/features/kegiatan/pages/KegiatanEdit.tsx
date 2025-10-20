@@ -29,11 +29,17 @@ const KegiatanEdit: React.FC = () => {
       setKegiatan(kegiatanData);
       
       // Set form values
-      form.setFieldsValue({
+      const formValues = {
         tanggal_kegiatan: kegiatanData.tanggal_kegiatan ? dayjs(kegiatanData.tanggal_kegiatan) : undefined,
         jenis_kegiatan: kegiatanData.jenis_kegiatan,
-        keterangan: kegiatanData.keterangan
-      });
+        keterangan: kegiatanData.keterangan,
+        jam_mulai: kegiatanData.jam_mulai ? dayjs(`2000-01-01T${kegiatanData.jam_mulai}`) : undefined,
+        jam_selesai: kegiatanData.jam_selesai ? dayjs(`2000-01-01T${kegiatanData.jam_selesai}`) : undefined,
+        include_absen: kegiatanData.include_absen || 'none'
+      };
+      
+      console.log('Setting form values:', formValues);
+      form.setFieldsValue(formValues);
     } catch (error: any) {
       console.error('Error fetching kegiatan detail:', error);
       message.error('Gagal memuat data kegiatan');
@@ -48,15 +54,27 @@ const KegiatanEdit: React.FC = () => {
     
     try {
       setLoading(true);
-      const values = await form.validateFields();
+      
+      // Get current form values directly
+      const values = form.getFieldsValue();
+      
+      // Validate fields
+      await form.validateFields();
+      
+      console.log('Form values before processing:', values);
       
       const formData: Partial<JadwalKegiatanFormData> = {
         tanggal_kegiatan: dayjs.isDayjs(values.tanggal_kegiatan) 
           ? values.tanggal_kegiatan.format('YYYY-MM-DD') 
           : values.tanggal_kegiatan,
         jenis_kegiatan: values.jenis_kegiatan,
-        keterangan: values.keterangan
+        keterangan: values.keterangan,
+        jam_mulai: values.jam_mulai ? dayjs(values.jam_mulai).format('HH:mm:ss') : undefined,
+        jam_selesai: values.jam_selesai ? dayjs(values.jam_selesai).format('HH:mm:ss') : undefined,
+        include_absen: values.include_absen || 'none'
       };
+
+      console.log('Form data to send:', formData);
 
       await kegiatanApi.update(kegiatan.id_kegiatan, formData);
       message.success('Kegiatan berhasil diperbarui');
@@ -125,15 +143,11 @@ const KegiatanEdit: React.FC = () => {
         style={{ marginTop: '24px' }}
       >
         <Row gutter={[24, 24]}>
-          <Col xs={24} lg={16} xl={14}>
+          <Col span={24}>
             <Card title="Informasi Kegiatan" style={{ height: '100%' }}>
               <KegiatanForm 
                 form={form} 
-                initialValues={{
-                  tanggal_kegiatan: kegiatan.tanggal_kegiatan,
-                  jenis_kegiatan: kegiatan.jenis_kegiatan,
-                  keterangan: kegiatan.keterangan
-                }}
+                initialValues={undefined}
               />
               
               <div style={{ 

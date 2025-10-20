@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useToasts } from '../store/uiStore';
+import { notificationService } from '../utils/messageService';
 
 interface UseFetchOptions {
   immediate?: boolean;
@@ -20,7 +20,6 @@ export function useFetch<T = any>(
   options: UseFetchOptions = {}
 ): UseFetchResult<T> {
   const { immediate = true, onSuccess, onError } = options;
-  const { showToast } = useToasts();
   
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
@@ -45,10 +44,7 @@ export function useFetch<T = any>(
       } else {
         // Default error handling
         const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan';
-        showToast({
-          message: errorMessage,
-          type: 'error'
-        });
+        notificationService.error(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -93,7 +89,6 @@ export function useMutation<TVariables = any, TData = any>(
   options: UseMutationOptions<TVariables, TData> = {}
 ): UseMutationResult<TVariables, TData> {
   const { onSuccess, onError, onSettled } = options;
-  const { showToast } = useToasts();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
@@ -120,10 +115,7 @@ export function useMutation<TVariables = any, TData = any>(
       } else {
         // Default error handling
         const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan';
-        showToast({
-          message: errorMessage,
-          type: 'error'
-        });
+        notificationService.error(errorMessage);
       }
       
       throw err;

@@ -57,11 +57,11 @@ export const kegiatanApi = {
 
   // Location management for kegiatan
   getKegiatanLokasi: async (id: number): Promise<ApiResponse> => {
-    const response = await apiClient.get(`/superadmin/jadwal-kegiatan-lokasi-skpd/${id}/lokasi`);
+    const response = await apiClient.get(`/superadmin/jadwal-kegiatan-lokasi-satker/${id}/lokasi`);
     return response.data;
   },
 
-  addLokasiToKegiatan: async (id: number, data: { lokasi_id: number; kdskpd_list: string[] }): Promise<ApiResponse> => {
+  addLokasiToKegiatan: async (id: number, data: { lokasi_id: number; kdsatker_list: string[] }): Promise<ApiResponse> => {
     const response = await apiClient.post(`/superadmin/jadwal-kegiatan/${id}/lokasi`, data);
     return response.data;
   },
@@ -79,10 +79,38 @@ export const kegiatanApi = {
     return response.data;
   },
 
-  // Edit/Update SKPD list for kegiatan-lokasi
-  editSkpdKegiatanLokasi: async (kegiatanId: number, lokasiId: number, kdskpdList: string[]): Promise<ApiResponse> => {
-    const response = await apiClient.put(`/superadmin/jadwal-kegiatan/${kegiatanId}/lokasi/${lokasiId}/skpd`, {
-      kdskpd_list: kdskpdList
+  // Edit/Update Satker list for kegiatan-lokasi
+  editSatkerKegiatanLokasi: async (kegiatanId: number, lokasiId: number, kdsatkerList: string[]): Promise<ApiResponse> => {
+    const response = await apiClient.put(`/superadmin/jadwal-kegiatan/${kegiatanId}/lokasi/${lokasiId}/satker`, {
+      kdsatker_list: kdsatkerList
+    });
+    return response.data;
+  },
+
+  // Get all satker for a kegiatan
+  getAllSatkerKegiatan: async (kegiatanId: number): Promise<ApiResponse> => {
+    const response = await apiClient.get(`/superadmin/jadwal-kegiatan/${kegiatanId}/satker`);
+    return response.data;
+  },
+
+  // Get detail satker for a kegiatan
+  getDetailSatkerKegiatan: async (kegiatanId: number, satkerId: string): Promise<ApiResponse> => {
+    const response = await apiClient.get(`/superadmin/jadwal-kegiatan/${kegiatanId}/satker/${satkerId}`);
+    return response.data;
+  },
+
+  // Download Excel for all satker in kegiatan (bulk download)
+  downloadBulkExcel: async (kegiatanId: number): Promise<Blob> => {
+    const response = await apiClient.get(`/superadmin/jadwal-kegiatan/${kegiatanId}/download-excel`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  // Download Excel for specific satker in kegiatan
+  downloadSatkerExcel: async (kegiatanId: number, satkerId: string): Promise<Blob> => {
+    const response = await apiClient.get(`/superadmin/jadwal-kegiatan/${kegiatanId}/satker/${satkerId}/download-excel`, {
+      responseType: 'blob'
     });
     return response.data;
   }

@@ -22,12 +22,15 @@ const KegiatanCreate: React.FC = () => {
           ? values.tanggal_kegiatan.format('YYYY-MM-DD') 
           : values.tanggal_kegiatan,
         jenis_kegiatan: values.jenis_kegiatan,
-        keterangan: values.keterangan
+        keterangan: values.keterangan,
+        jam_mulai: values.jam_mulai ? dayjs(values.jam_mulai).format('HH:mm:ss') : undefined,
+        jam_selesai: values.jam_selesai ? dayjs(values.jam_selesai).format('HH:mm:ss') : undefined,
+        include_absen: values.include_absen || 'none'
       };
 
-      await kegiatanApi.create(formData);
+      const response = await kegiatanApi.create(formData);
       message.success('Kegiatan berhasil ditambahkan');
-      navigate('/kegiatan');
+      navigate(`/kegiatan/${response.data?.id_kegiatan}`);
     } catch (error: any) {
       console.error('Error creating kegiatan:', error);
       if (error.response?.data?.message) {
@@ -69,10 +72,11 @@ const KegiatanCreate: React.FC = () => {
         style={{ marginTop: '24px' }}
         initialValues={{
           jenis_kegiatan: '',
+          include_absen: 'none',
         }}
       >
         <Row gutter={[24, 24]}>
-          <Col xs={24} lg={16} xl={14}>
+          <Col span={24}>
             <Card title="Informasi Kegiatan" style={{ height: '100%' }}>
               <KegiatanForm form={form} />
               

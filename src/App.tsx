@@ -1,6 +1,7 @@
 import AppProviders from './app/providers';
 import AppRoutes from './app/routes';
-import './services/interceptors'; // Import interceptors to initialize them
+import './services/interceptors'; 
+
 
 function App() {
   return (

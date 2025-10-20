@@ -17,18 +17,13 @@ import {
 } from 'antd';
 import {
   SearchOutlined,
-  EyeOutlined,
   DownloadOutlined,
   ReloadOutlined,
   CalendarOutlined,
-  EnvironmentOutlined,
-  ClockCircleOutlined,
   BarChartOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { presensiApi } from '../services/presensiApi';
-import { lokasiApi } from '../../lokasi/services/lokasiApi';
 import DebounceSelect from '../../../components/DebounceSelect';
 import type {
   Kehadiran,
@@ -44,7 +39,6 @@ const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
 const PresensiPage: React.FC = () => {
-  const navigate = useNavigate();
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<'harian' | 'bulanan'>('harian');
@@ -68,28 +62,64 @@ const PresensiPage: React.FC = () => {
   // Export loading
   const [exportLoading, setExportLoading] = useState(false);
 
-  // Selected lokasi state to store complete lokasi info
-  const [selectedHarianLokasi, setSelectedHarianLokasi] = useState<{key: string; label: string; value: string} | undefined>();
-  const [selectedBulananLokasi, setSelectedBulananLokasi] = useState<{key: string; label: string; value: string} | undefined>();
+  // Satker dan Bidang options state
+  const [satkerOptions, setSatkerOptions] = useState<Array<{ label: string; value: string; }>>([]);
+  const [bidangOptions, setBidangOptions] = useState<Array<{ label: string; value: string; }>>([]);
+  const [loadingSatker, setLoadingSatker] = useState(false);
+  const [loadingBidang, setLoadingBidang] = useState(false);
 
-  // Lokasi fetch function for DebounceSelect
-  const fetchLokasiOptions = async (search: string): Promise<Array<{ key: string; label: string; value: string }>> => {
+  // Fetch Satker options (Level 1) - untuk DebounceSelect
+  const fetchSatkerOptionsForSelect = async (search: string): Promise<Array<{ label: string; value: string; }>> => {
     try {
-      const response = await lokasiApi.getAll({ 
-        search: search || undefined, 
-        status: true, 
-        limit: 20 // Limit results for better performance
-      });
-      
-      return response.data.map(lokasi => ({
-        key: lokasi.lokasi_id.toString(),
-        label: lokasi.ket,
-        value: lokasi.lokasi_id.toString()
-      }));
-    } catch (error: any) {
-      console.error('Error fetching lokasi options:', error);
-      message.error('Gagal memuat data lokasi');
+      const options = await presensiApi.getSatkerOptions(search);
+      return options;
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
       return [];
+    }
+  };
+
+  // Fetch Bidang options based on selected Satker (Level 2) - untuk DebounceSelect
+  const fetchBidangOptionsForSelect = async (search: string): Promise<Array<{ label: string; value: string; }>> => {
+    if (!harianFilters.satker || harianFilters.satker === 'null') {
+      return [{ label: '🚫 Tanpa Bidang', value: 'null' }];
+    }
+    
+    try {
+      const options = await presensiApi.getBidangOptions(harianFilters.satker, search);
+      return options;
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
+      return [{ label: '🚫 Tanpa Bidang', value: 'null' }];
+    }
+  };
+
+  // Fetch Satker options untuk initial load
+  const fetchSatkerOptions = async (search?: string) => {
+    try {
+      setLoadingSatker(true);
+      const options = await presensiApi.getSatkerOptions(search);
+      setSatkerOptions(options);
+    } catch (error) {
+      console.error('Error fetching Satker options:', error);
+      setSatkerOptions([]);
+    } finally {
+      setLoadingSatker(false);
+    }
+  };
+
+  // Fetch Bidang options untuk initial load
+  const fetchBidangOptions = async (kdSatker: string, search?: string) => {
+    try {
+      setLoadingBidang(true);
+      const options = await presensiApi.getBidangOptions(kdSatker, search);
+      setBidangOptions(options);
+    } catch (error) {
+      console.error('Error fetching Bidang options:', error);
+      const defaultOptions = [{ label: '🚫 Tanpa Bidang', value: 'null' }];
+      setBidangOptions(defaultOptions);
+    } finally {
+      setLoadingBidang(false);
     }
   };
 
@@ -98,6 +128,8 @@ const PresensiPage: React.FC = () => {
     search: '',
     selectedDate: null,
     lokasi_id: '',
+    satker: '',
+    bidang: '',
     status: '',
     pagination: {
       current: 1,
@@ -109,13 +141,15 @@ const PresensiPage: React.FC = () => {
   const [bulananFilters, setBulananFilters] = useState<MonthlyAttendanceFilters>({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
-    lokasi_id: undefined,
+    satker: undefined,
+    bidang: undefined,
     user_id: undefined
   });
 
   // Fetch data when component mounts or filters change
   useEffect(() => {
-    // No need to fetch lokasi here since DebounceSelect handles it
+    // Load initial Satker options
+    fetchSatkerOptions();
   }, []);
 
   // Auto-filter when filters change (no manual filter button needed)
@@ -128,7 +162,16 @@ const PresensiPage: React.FC = () => {
 
       return () => clearTimeout(debounceTimer);
     }
-  }, [activeTab, harianFilters.selectedDate, harianFilters.search, harianFilters.lokasi_id, harianFilters.status, harianFilters.pagination.current, harianFilters.pagination.pageSize]);
+  }, [activeTab, harianFilters.selectedDate, harianFilters.search, harianFilters.lokasi_id, harianFilters.satker, harianFilters.bidang, harianFilters.status, harianFilters.pagination.current, harianFilters.pagination.pageSize]);
+
+  // Load bidang options when satker changes
+  useEffect(() => {
+    if (harianFilters.satker && harianFilters.satker !== 'null') {
+      fetchBidangOptions(harianFilters.satker);
+    } else {
+      setBidangOptions([{ label: '🚫 Tanpa Bidang', value: 'null' }]);
+    }
+  }, [harianFilters.satker]);
 
   useEffect(() => {
     if (activeTab === 'bulanan') {
@@ -144,8 +187,9 @@ const PresensiPage: React.FC = () => {
         limit: harianFilters.pagination.pageSize,
         search: harianFilters.search || undefined,
         startDate: harianFilters.selectedDate || undefined,
-        // endDate not needed for single date filter
         lokasi_id: harianFilters.lokasi_id || undefined,
+        satker: harianFilters.satker || undefined,
+        bidang: harianFilters.bidang || undefined,
         status: harianFilters.status as any || undefined
       };
 
@@ -200,10 +244,6 @@ const PresensiPage: React.FC = () => {
     }));
   };
 
-  // Handle view detail
-  const handleViewDetail = (record: Kehadiran) => {
-    navigate(`/presensi/${record.absen_id}`);
-  };
 
   // Handle export functions
   const handleExportHarian = async () => {
@@ -217,6 +257,8 @@ const PresensiPage: React.FC = () => {
       const exportFilters: ExportFilters = {
         tanggal: harianFilters.selectedDate,
         lokasi_id: harianFilters.lokasi_id || undefined,
+        satker: harianFilters.satker || undefined,
+        bidang: harianFilters.bidang || undefined,
         search: harianFilters.search || undefined,
         status: (harianFilters.status as 'HAP' | 'TAP' | 'HAS' | 'CP') || undefined
       };
@@ -226,6 +268,8 @@ const PresensiPage: React.FC = () => {
       // Create descriptive success message
       let filterDesc = [];
       if (harianFilters.lokasi_id) filterDesc.push('lokasi dipilih');
+      if (harianFilters.satker) filterDesc.push('satker dipilih');
+      if (harianFilters.bidang) filterDesc.push('bidang dipilih');
       if (harianFilters.search) filterDesc.push(`pencarian "${harianFilters.search}"`);
       if (harianFilters.status) filterDesc.push(`status ${harianFilters.status}`);
       
@@ -247,7 +291,8 @@ const PresensiPage: React.FC = () => {
       const exportFilters: ExportFilters = {
         month: bulananFilters.month,
         year: bulananFilters.year,
-        lokasi_id: bulananFilters.lokasi_id || undefined,
+        satker: bulananFilters.satker || undefined,
+        bidang: bulananFilters.bidang || undefined,
         user_id: bulananFilters.user_id || undefined
       };
       
@@ -258,7 +303,8 @@ const PresensiPage: React.FC = () => {
       
       // Create descriptive success message
       let filterDesc = [];
-      if (bulananFilters.lokasi_id) filterDesc.push('lokasi dipilih');
+      if (bulananFilters.satker) filterDesc.push('satker dipilih');
+      if (bulananFilters.bidang) filterDesc.push('bidang dipilih');
       if (bulananFilters.user_id) filterDesc.push('user dipilih');
       
       const filterText = filterDesc.length > 0 ? ` dengan filter: ${filterDesc.join(', ')}` : '';
@@ -271,22 +317,6 @@ const PresensiPage: React.FC = () => {
     }
   };
 
-  // Render status tags for harian
-  const renderStatusTag = (record: Kehadiran) => {
-    const tags = [];
-    
-    // Render absen_kat
-    if (record.absen_kat) {
-      tags.push(
-        <Tag key="kat" color="blue">
-          {record.absen_kat}
-        </Tag>
-      );
-    }
-    
-    return <Space wrap>{tags}</Space>;
-  };
-
   // Render apel status
   const renderApelStatus = (status: string | null | undefined, type: 'pagi' | 'sore') => {
     if (!status) return <Text type="secondary">-</Text>;
@@ -296,113 +326,89 @@ const PresensiPage: React.FC = () => {
     
     if (type === 'pagi') {
       color = status === 'HAP' ? 'green' : 'orange';
-      text = status === 'HAP' ? 'Hadir' : 'Telat';
+      text = status === 'HAP' ? 'HAP' : 'TAP';
     } else {
       color = status === 'HAS' ? 'green' : 'red';
-      text = status === 'HAS' ? 'Hadir' : 'Cepat Pulang';
+      text = status === 'HAS' ? 'HAS' : 'CP';
     }
     
     return <Tag color={color}>{text}</Tag>;
   };
 
-  // Render combined check-in time with morning attendance status
-  const renderJamMasukApelPagi = (record: Kehadiran) => {
-    const time = record.absen_checkin;
-    const apelStatus = record.absen_apel;
-    
-    return (
-      <Space direction="vertical" size="small">
-        <Space>
-          <ClockCircleOutlined style={{ color: time ? '#52c41a' : '#ff4d4f' }} />
-          <Text>{time || '-'}</Text>
-        </Space>
-        {apelStatus ? renderApelStatus(apelStatus, 'pagi') : <Text type="secondary">-</Text>}
-      </Space>
-    );
-  };
-
-  // Render combined check-out time with afternoon attendance status
-  const renderJamKeluarApelSore = (record: Kehadiran) => {
-    const time = record.absen_checkout;
-    const apelStatus = record.absen_sore;
-    
-    return (
-      <Space direction="vertical" size="small">
-        <Space>
-          <ClockCircleOutlined style={{ color: time ? '#52c41a' : '#ff4d4f' }} />
-          <Text>{time || '-'}</Text>
-        </Space>
-        {apelStatus ? renderApelStatus(apelStatus, 'sore') : <Text type="secondary">-</Text>}
-      </Space>
-    );
-  };
 
   // Harian table columns
   const harianColumns = [
     {
+      title: 'NIP & Nama',
+      key: 'nip_nama',
+      width: 200,
+      render: (_: any, record: Kehadiran) => (
+        <div>
+          <div><Text code>{record.pegawai.nip}</Text></div>
+          <div><Text strong>{record.pegawai.nama}</Text></div>
+        </div>
+      )
+    },
+    {
+      title: 'ID & Nama Unit Kerja',
+      key: 'id_nama_unit_kerja',
+      width: 250,
+      render: (_: any, record: Kehadiran) => {
+        const unitKerjaId = `${record.pegawai.kdsatker}/${record.pegawai.bidangf}/${record.pegawai.subf}`;
+        return (
+          <div>
+            <div><Text code>{unitKerjaId}</Text></div>
+            <div><Text>{record.pegawai.nm_unit_kerja}</Text></div>
+          </div>
+        );
+      }
+    },
+    {
+      title: 'Jam Masuk & Status',
+      key: 'jam_masuk_status',
+      width: 150,
+      render: (_: any, record: Kehadiran) => {
+        const time = record.absen_checkin;
+        const apelStatus = record.absen_apel;
+        
+        // Format time to HH:MM (remove seconds)
+        const formattedTime = time ? time.substring(0, 5) : '-';
+        
+        return (
+          <div>
+            <div><Text>{formattedTime}</Text></div>
+            <div>{renderApelStatus(apelStatus, 'pagi')}</div>
+          </div>
+        );
+      }
+    },
+    {
+      title: 'Jam Keluar & Status',
+      key: 'jam_keluar_status',
+      width: 150,
+      render: (_: any, record: Kehadiran) => {
+        const time = record.absen_checkout;
+        const apelStatus = record.absen_sore;
+        
+        // Format time to HH:MM (remove seconds)
+        const formattedTime = time ? time.substring(0, 5) : '-';
+        
+        return (
+          <div>
+            <div><Text>{formattedTime}</Text></div>
+            <div>{renderApelStatus(apelStatus, 'sore')}</div>
+          </div>
+        );
+      }
+    },
+    {
       title: 'Tanggal',
-      dataIndex: 'absen_tgl',
-      key: 'absen_tgl',
+      key: 'tanggal',
       width: 120,
-      render: (date: string) => (
+      render: (_: any, record: Kehadiran) => (
         <Space>
           <CalendarOutlined />
-          <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
-        </Space>
-      ),
-      sorter: true
-    },
-    {
-      title: 'Username',
-      key: 'username',
-      width: 150,
-      render: (_: any, record: Kehadiran) => (
-        <Text strong>{record.User?.username || record.absen_nip}</Text>
-      )
-    },
-    {
-      title: 'Jam Masuk',
-      key: 'jam_masuk_apel_pagi',
-      width: 150,
-      render: (_: any, record: Kehadiran) => renderJamMasukApelPagi(record)
-    },
-    {
-      title: 'Jam Keluar',
-      key: 'jam_keluar_apel_sore',
-      width: 150,
-      render: (_: any, record: Kehadiran) => renderJamKeluarApelSore(record)
-    },
-    {
-      title: 'Lokasi',
-      key: 'lokasi',
-      width: 150,
-      render: (_: any, record: Kehadiran) => (
-        <Space>
-          <EnvironmentOutlined />
-          <Text>{record.Lokasi?.ket || record.lokasi_id}</Text>
-        </Space>
-      )
-    },
-    {
-      title: 'Status',
-      key: 'status',
-      width: 70,
-      render: (_: any, record: Kehadiran) => renderStatusTag(record)
-    },
-    {
-      title: 'Aksi',
-      key: 'action',
-      width: 80,
-      fixed: 'right' as const,
-      render: (_: any, record: Kehadiran) => (
-        <Space>
-          <Tooltip title="Lihat Detail">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetail(record)}
-            />
-          </Tooltip>
+          <Text>{dayjs(record.absen_tgl).format('DD/MM/YYYY')}</Text>
         </Space>
       )
     }
@@ -485,7 +491,7 @@ const PresensiPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
       <Row gutter={[0, 16]}>
         <Col span={24}>
           <Card>
@@ -573,16 +579,35 @@ const PresensiPage: React.FC = () => {
                     </Col>
                     <Col xs={24} sm={12} lg={4}>
                       <DebounceSelect
-                        placeholder="Pilih Lokasi"
-                        value={selectedHarianLokasi}
+                        placeholder="Pilih Satker"
+                        value={harianFilters.satker ? { label: satkerOptions.find(opt => opt.value === harianFilters.satker)?.label || '', value: harianFilters.satker } : undefined}
                         onChange={(value: any) => {
-                          setSelectedHarianLokasi(value);
                           const selectedValue = value?.value || '';
-                          setHarianFilters(prev => ({ ...prev, lokasi_id: selectedValue.toString() }));
+                          setHarianFilters(prev => ({ 
+                            ...prev, 
+                            satker: selectedValue,
+                            bidang: '' // Reset bidang when satker changes
+                          }));
                         }}
-                        fetchOptions={fetchLokasiOptions}
+                        fetchOptions={fetchSatkerOptionsForSelect}
                         style={{ width: '100%' }}
                         allowClear
+                        loading={loadingSatker}
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} lg={4}>
+                      <DebounceSelect
+                        placeholder="Pilih Bidang"
+                        value={harianFilters.bidang ? { label: bidangOptions.find(opt => opt.value === harianFilters.bidang)?.label || '', value: harianFilters.bidang } : undefined}
+                        onChange={(value: any) => {
+                          const selectedValue = value?.value || '';
+                          setHarianFilters(prev => ({ ...prev, bidang: selectedValue }));
+                        }}
+                        fetchOptions={fetchBidangOptionsForSelect}
+                        style={{ width: '100%' }}
+                        allowClear
+                        loading={loadingBidang}
+                        disabled={!harianFilters.satker || harianFilters.satker === 'null'}
                       />
                     </Col>
                     <Col xs={24} sm={12} lg={4}>
@@ -599,33 +624,6 @@ const PresensiPage: React.FC = () => {
                         <Option value="CP">Cepat Pulang</Option>
                       </Select>
                     </Col>
-                    <Col xs={24} lg={5}>
-                      <Button
-                        icon={<ReloadOutlined />}
-                        onClick={() => {
-                          setHarianFilters({
-                            search: '',
-                            selectedDate: null,
-                            lokasi_id: '',
-                            status: '',
-                            pagination: { current: 1, pageSize: 10 }
-                          });
-                          setSelectedHarianLokasi(undefined);
-                          setHarianPagination(prev => ({ ...prev, current: 1 }));
-                        }}
-                        loading={harianLoading}
-                        style={{ width: '100%' }}
-                      >
-                        Reset Filter
-                      </Button>
-                    </Col>
-                  </Row>
-                  <Row style={{ marginTop: 8 }}>
-                    <Col span={24}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        💡 Data dan export otomatis difilter saat tanggal atau filter diubah
-                      </Text>
-                    </Col>
                   </Row>
                 </Card>
 
@@ -633,7 +631,7 @@ const PresensiPage: React.FC = () => {
                 <Table
                   columns={harianColumns}
                   dataSource={harianData}
-                  rowKey="absen_id"
+                  rowKey={(record) => `${record.pegawai.nip}-${record.absen_tgl}`}
                   loading={harianLoading}
                   pagination={{
                     ...harianPagination,
@@ -683,16 +681,32 @@ const PresensiPage: React.FC = () => {
                     </Col>
                     <Col xs={24} sm={6}>
                       <DebounceSelect
-                        placeholder="Filter Lokasi"
-                        value={selectedBulananLokasi}
+                        placeholder="Filter Satker"
+                        value={bulananFilters.satker ? { label: satkerOptions.find(opt => opt.value === bulananFilters.satker)?.label || '', value: bulananFilters.satker } : undefined}
                         onChange={(value: any) => {
-                          setSelectedBulananLokasi(value);
                           const selectedValue = value?.value || undefined;
-                          handleBulananFilterChange('lokasi_id', selectedValue);
+                          handleBulananFilterChange('satker', selectedValue);
+                          handleBulananFilterChange('bidang', undefined); // Reset bidang when satker changes
                         }}
-                        fetchOptions={fetchLokasiOptions}
+                        fetchOptions={fetchSatkerOptionsForSelect}
                         style={{ width: '100%' }}
                         allowClear
+                        loading={loadingSatker}
+                      />
+                    </Col>
+                    <Col xs={24} sm={6}>
+                      <DebounceSelect
+                        placeholder="Filter Bidang"
+                        value={bulananFilters.bidang ? { label: bidangOptions.find(opt => opt.value === bulananFilters.bidang)?.label || '', value: bulananFilters.bidang } : undefined}
+                        onChange={(value: any) => {
+                          const selectedValue = value?.value || undefined;
+                          handleBulananFilterChange('bidang', selectedValue);
+                        }}
+                        fetchOptions={fetchBidangOptionsForSelect}
+                        style={{ width: '100%' }}
+                        allowClear
+                        loading={loadingBidang}
+                        disabled={!bulananFilters.satker || bulananFilters.satker === 'null'}
                       />
                     </Col>
                     <Col xs={24} sm={6}>
@@ -709,7 +723,7 @@ const PresensiPage: React.FC = () => {
                   <Row style={{ marginTop: 8 }}>
                     <Col span={24}>
                       <Text type="secondary" style={{ fontSize: '12px' }}>
-                        💡 Export akan menggunakan filter bulan/tahun dan lokasi yang sedang aktif di atas
+                        💡 Export akan menggunakan filter bulan/tahun dan satker/bidang yang sedang aktif di atas
                       </Text>
                     </Col>
                   </Row>

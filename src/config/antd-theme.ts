@@ -152,7 +152,7 @@ export const antdTheme: ThemeConfig = {
       algorithm: true,
     },
     Layout: {
-      colorBgHeader: '#ffffff',
+      headerBg: '#ffffff',
       bodyBg: '#f8fafc',
       triggerBg: '#ffffff',
     },

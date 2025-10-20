@@ -94,3 +94,28 @@ export const dateFormatter = {
     }
   }
 };
+
+// Standalone functions for easier imports
+export const formatDate = (date: string | Date, formatStr: string = 'dd MMM yyyy'): string => {
+  return dateFormatter.toIndonesian(date, formatStr);
+};
+
+export const formatTime = (time: string): string => {
+  try {
+    if (!time) return '-';
+    // If time is in HH:mm format, return as is
+    if (time.match(/^\d{2}:\d{2}$/)) return time;
+    // If time is in HH:mm:ss format, remove seconds
+    if (time.match(/^\d{2}:\d{2}:\d{2}$/)) return time.substring(0, 5);
+    // Try to parse as date and extract time
+    const dateObj = parseISO(time);
+    if (isValid(dateObj)) return format(dateObj, 'HH:mm');
+    return time;
+  } catch {
+    return '-';
+  }
+};
+
+export const formatDateTime = (datetime: string | Date, formatStr: string = 'dd MMM yyyy HH:mm'): string => {
+  return dateFormatter.toIndonesian(datetime, formatStr);
+};

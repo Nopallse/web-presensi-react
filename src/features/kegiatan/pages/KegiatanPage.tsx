@@ -20,7 +20,8 @@ import {
   EyeOutlined,
   CalendarOutlined,
   SearchOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { kegiatanApi } from '../services/kegiatanApi';
@@ -123,6 +124,48 @@ const KegiatanPage: React.FC = () => {
     } catch (error: any) {
       console.error('Error deleting kegiatan:', error);
       message.error('Gagal menghapus kegiatan');
+    }
+  };
+
+  // Download Excel untuk semua kegiatan
+  const handleDownloadAllExcel = async () => {
+    try {
+      // Buat CSV content
+      const headers = ['No', 'Tanggal Kegiatan', 'Jenis Kegiatan', 'Keterangan', 'Jam Mulai', 'Jam Selesai', 'Dibuat'];
+      const csvContent = [
+        headers.join(','),
+        ...data.map((kegiatan, index) => [
+          index + 1,
+          `"${dateFormatter.toIndonesian(kegiatan.tanggal_kegiatan)}"`,
+          `"${getJenisKegiatanLabel(kegiatan.jenis_kegiatan)}"`,
+          `"${kegiatan.keterangan.replace(/"/g, '""')}"`,
+          `"${kegiatan.jam_mulai}"`,
+          `"${kegiatan.jam_selesai}"`,
+          `"${kegiatan.createdAt ? dateFormatter.toTableFormat(kegiatan.createdAt) : '-'}"`
+        ].join(','))
+      ].join('\n');
+
+      // Generate filename
+      const now = new Date();
+      const filename = `Data_Kegiatan_${now.toLocaleDateString('id-ID').replace(/\//g, '-')}.csv`;
+
+      // Download file
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+      
+      message.success('File CSV berhasil didownload');
+    } catch (error: any) {
+      console.error('Error downloading CSV:', error);
+      message.error('Gagal mendownload file CSV');
     }
   };
 
@@ -243,13 +286,22 @@ const KegiatanPage: React.FC = () => {
             Kelola Jadwal Kegiatan
           </Title>
           
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/kegiatan/create')}
-          >
-            Tambah Kegiatan
-          </Button>
+          <Space>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadAllExcel}
+              loading={loading}
+            >
+              Download CSV
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/kegiatan/create')}
+            >
+              Tambah Kegiatan
+            </Button>
+          </Space>
         </div>
 
         {/* Filters */}

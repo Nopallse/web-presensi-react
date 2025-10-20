@@ -6,7 +6,7 @@ import { isInvalidRefreshTokenError } from '../utils/authUtils';
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'https://api.pariamankota.my.id',
-  timeout: 10000,
+  timeout: 30000, // Increase timeout to 30 seconds
   headers: {
     'Content-Type': 'application/json',
   },

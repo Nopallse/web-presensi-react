@@ -3,9 +3,12 @@ export interface JadwalKegiatan {
   tanggal_kegiatan: string;
   jenis_kegiatan: string;
   keterangan: string;
+  jam_mulai?: string;
+  jam_selesai?: string;
+  include_absen?: string;
   createdAt?: string;
   updatedAt?: string;
-  lokasi_list?: LokasiWithSkpd[];
+  lokasi_list?: LokasiWithSatker[];
   Lokasis?: LokasiKegiatan[];
 }
 
@@ -18,8 +21,8 @@ export interface LokasiKegiatan {
   range: number;
 }
 
-export interface LokasiWithSkpd extends LokasiKegiatan {
-  skpd_list: string[];
+export interface LokasiWithSatker extends LokasiKegiatan {
+  satker_list: string[];
 }
 
 export interface JadwalKegiatanListResponse {
@@ -50,6 +53,9 @@ export interface CreateJadwalKegiatanRequest {
   tanggal_kegiatan: string;
   jenis_kegiatan: string;
   keterangan: string;
+  jam_mulai?: string;
+  jam_selesai?: string;
+  include_absen?: string;
 }
 
 export interface UpdateJadwalKegiatanRequest extends Partial<CreateJadwalKegiatanRequest> {
@@ -60,6 +66,9 @@ export interface JadwalKegiatanFormData {
   tanggal_kegiatan: string;
   jenis_kegiatan: string;
   keterangan: string;
+  jam_mulai?: string;
+  jam_selesai?: string;
+  include_absen?: string;
 }
 
 export interface ApiResponse<T = any> {
@@ -90,4 +99,21 @@ export const JENIS_KEGIATAN_OPTIONS = [
   { value: JENIS_KEGIATAN.SEMINAR, label: 'Seminar' },
   { value: JENIS_KEGIATAN.UPACARA, label: 'Upacara' },
   { value: JENIS_KEGIATAN.LAINNYA, label: 'Lainnya' }
+];
+
+// Attendance inclusion constants
+export const INCLUDE_ABSEN = {
+  NONE: 'none',
+  PAGI: 'pagi',
+  SORE: 'sore',
+  KEDUANYA: 'keduanya'
+} as const;
+
+export type IncludeAbsen = typeof INCLUDE_ABSEN[keyof typeof INCLUDE_ABSEN];
+
+export const INCLUDE_ABSEN_OPTIONS = [
+  { value: INCLUDE_ABSEN.NONE, label: 'Hanya kehadiran kegiatan' },
+  { value: INCLUDE_ABSEN.PAGI, label: 'Menggantikan absen pagi' },
+  { value: INCLUDE_ABSEN.SORE, label: 'Menggantikan absen sore' },
+  { value: INCLUDE_ABSEN.KEDUANYA, label: 'Menggantikan absen pagi dan sore' },
 ];
