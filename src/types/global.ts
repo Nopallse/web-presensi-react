@@ -23,6 +23,15 @@ export interface User {
     id_bidang?: string;
     kategori: number;
   };
+  // Additional admin_upt data
+  admin_upt?: {
+    admupt_id: number;
+    id_skpd: string;
+    id_satker: string;
+    id_bidang: string;
+    kategori: number;
+    umum: string;
+  };
 }
 
 export interface ApiResponse<T = any> {

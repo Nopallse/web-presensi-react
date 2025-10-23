@@ -8,6 +8,15 @@ interface AdminOpd {
   kategori: string;
 }
 
+interface AdminUpt {
+  admupt_id: string;
+  id_skpd: string;
+  id_satker: string;
+  id_bidang: string;
+  kategori: string;
+  umum: string;
+}
+
 interface LoginResponse {
   message: string;
   accessToken: string;
@@ -21,6 +30,7 @@ interface LoginResponse {
     device_id?: string | null;
   };
   admin_opd?: AdminOpd | null;
+  admin_upt?: AdminUpt | null;
 }
 
 interface RefreshTokenResponse {

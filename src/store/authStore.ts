@@ -66,10 +66,9 @@ export const useAuthStore = create<AuthStore>()(
               case '1':
                 return 'super_admin';
               case '2':
+                return 'admin-opd';
               case '3':
-                // If admin_opd exists, it's admin-opd, otherwise regular admin
-                if (response.admin_opd) return 'admin-opd';
-                return 'admin';
+                return 'admin-upt';
               default:
                 throw new Error('Level tidak valid'); // This shouldn't happen due to validation above
             }
@@ -86,8 +85,8 @@ export const useAuthStore = create<AuthStore>()(
             role: role,
             phone: '',
             nip: response.user.username, // Assuming username is NIP
-            skpd: response.admin_opd?.id_skpd || '',
-            jabatan: response.admin_opd?.kategori || '',
+            skpd: response.admin_opd?.id_skpd || response.admin_upt?.id_skpd || '',
+            jabatan: response.admin_opd?.kategori || response.admin_upt?.kategori || '',
             status: response.user.status === '0' ? 'active' : 'inactive',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -97,6 +96,14 @@ export const useAuthStore = create<AuthStore>()(
               id_satker: response.admin_opd.id_satker,
               id_bidang: response.admin_opd.id_bidang || undefined,
               kategori: Number(response.admin_opd.kategori)
+            } : undefined,
+            admin_upt: response.admin_upt ? {
+              admupt_id: Number(response.admin_upt.admupt_id),
+              id_skpd: response.admin_upt.id_skpd,
+              id_satker: response.admin_upt.id_satker,
+              id_bidang: response.admin_upt.id_bidang,
+              kategori: Number(response.admin_upt.kategori),
+              umum: response.admin_upt.umum
             } : undefined
           };
           
@@ -214,7 +221,7 @@ export const useAuthStore = create<AuthStore>()(
         username: tokenPayload.username || '',
         email: '',
         name: tokenPayload.username || '',
-        role: tokenPayload.level === '1' ? 'super_admin' : 'admin',
+        role: tokenPayload.level === '1' ? 'super_admin' : tokenPayload.level === '2' ? 'admin-opd' : 'admin-upt',
         phone: '',
         nip: tokenPayload.username || '',
         skpd: '',
@@ -344,7 +351,7 @@ export const useAuthStore = create<AuthStore>()(
                 username: tokenPayload.username || '',
                 email: '',
                 name: tokenPayload.username || '',
-                role: tokenPayload.level === '1' ? 'super_admin' : 'admin',
+                role: tokenPayload.level === '1' ? 'super_admin' : tokenPayload.level === '2' ? 'admin-opd' : 'admin-upt',
                 phone: '',
                 nip: tokenPayload.username || '',
                 skpd: '',

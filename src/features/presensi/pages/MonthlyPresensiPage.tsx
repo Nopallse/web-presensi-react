@@ -13,7 +13,8 @@ import {
   message,
   Tag,
   Progress,
-  Divider
+  Divider,
+  Alert
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -22,16 +23,20 @@ import {
   ClockCircleOutlined,
   TeamOutlined,
   DownloadOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { presensiApi } from '../services/presensiApi';
 import DebounceSelect from '../../../components/DebounceSelect';
+import { useAdminAutoFilter, useEffectiveFilter } from '../hooks/useAdminAutoFilter';
+import { useAuthStore } from '../../../store/authStore';
 import type {
   MonthlyAttendanceData,
   MonthlyAttendanceFilters,
-  AttendanceStats
+  AttendanceStats,
+  ExportFilters
 } from '../types';
 
 const { Option } = Select;
@@ -40,6 +45,9 @@ const { Title, Text } = Typography;
 const MonthlyPresensiPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Admin auto-filter hooks
+  const autoFilter = useAdminAutoFilter();
   
   // State management
   const [data, setData] = useState<MonthlyAttendanceData | null>(null);
@@ -62,6 +70,9 @@ const MonthlyPresensiPage: React.FC = () => {
     page: 1,
     limit: 31 // For daily breakdown
   });
+
+  // Effective filter untuk monthly
+  const monthlyEffectiveFilter = useEffectiveFilter(filters.satker, filters.bidang);
 
   useEffect(() => {
     fetchMonthlyData();
@@ -109,12 +120,22 @@ const MonthlyPresensiPage: React.FC = () => {
 
   // Fetch Bidang options based on selected Satker (Level 2) - untuk DebounceSelect
   const fetchBidangOptionsForSelect = async (search: string): Promise<Array<{ label: string; value: string; }>> => {
-    if (!filters.satker || filters.satker === '' || filters.satker === 'null') {
+    // Untuk Admin OPD/UPT, gunakan satker dari auto-filter
+    const user = useAuthStore.getState().user;
+    let satkerToUse = filters.satker;
+    
+    if (user?.role === 'admin-opd' && user.admin_opd) {
+      satkerToUse = user.admin_opd.id_satker;
+    } else if (user?.role === 'admin-upt' && user.admin_upt) {
+      satkerToUse = user.admin_upt.id_satker;
+    }
+    
+    if (!satkerToUse || satkerToUse === '' || satkerToUse === 'null') {
       return [{ label: '🚫 Tanpa Bidang', value: 'null' }];
     }
     
     try {
-      const options = await presensiApi.getBidangOptions(filters.satker, search);
+      const options = await presensiApi.getBidangOptions(satkerToUse, search);
       return options;
     } catch (error) {
       console.error('Error fetching Bidang options:', error);
@@ -127,10 +148,20 @@ const MonthlyPresensiPage: React.FC = () => {
     fetchSatkerOptions();
   }, []);
 
-  // Load bidang options when satker changes
+  // Load bidang options when satker changes atau untuk Admin OPD/UPT
   useEffect(() => {
-    if (filters.satker && filters.satker !== '' && filters.satker !== 'null') {
-      fetchBidangOptions(filters.satker);
+    const user = useAuthStore.getState().user;
+    let satkerToUse = filters.satker;
+    
+    // Untuk Admin OPD/UPT, gunakan satker dari auto-filter
+    if (user?.role === 'admin-opd' && user.admin_opd) {
+      satkerToUse = user.admin_opd.id_satker;
+    } else if (user?.role === 'admin-upt' && user.admin_upt) {
+      satkerToUse = user.admin_upt.id_satker;
+    }
+    
+    if (satkerToUse && satkerToUse !== '' && satkerToUse !== 'null') {
+      fetchBidangOptions(satkerToUse);
     } else {
       setBidangOptions([{ label: '🚫 Tanpa Bidang', value: 'null' }]);
     }
@@ -139,7 +170,16 @@ const MonthlyPresensiPage: React.FC = () => {
   const fetchMonthlyData = async () => {
     setLoading(true);
     try {
-      const response = await presensiApi.getMonthlyAttendanceByFilter(filters);
+      const apiFilters: MonthlyAttendanceFilters = {
+        ...filters,
+        satker: monthlyEffectiveFilter.satker || undefined,
+        bidang: monthlyEffectiveFilter.bidang || undefined
+      };
+
+      console.log('Monthly API Filters:', apiFilters);
+      console.log('Auto-filter reason:', monthlyEffectiveFilter.filterReason);
+
+      const response = await presensiApi.getMonthlyAttendanceByFilter(apiFilters);
       
       if (response.success) {
         setData(response.data);
@@ -181,18 +221,23 @@ const MonthlyPresensiPage: React.FC = () => {
 
     setExportLoading(true);
     try {
-      await presensiApi.exportAndDownloadBulanan({
+      const exportFilters: ExportFilters = {
         month: filters.month,
         year: filters.year,
-        satker: filters.satker,
-        bidang: filters.bidang,
+        satker: monthlyEffectiveFilter.satker || undefined,
+        bidang: monthlyEffectiveFilter.bidang || undefined,
         user_id: filters.user_id
-      });
+      };
+
+      console.log('Export Monthly Filters:', exportFilters);
+      console.log('Auto-filter reason:', monthlyEffectiveFilter.filterReason);
+
+      await presensiApi.exportAndDownloadBulanan(exportFilters);
       
       // Create descriptive success message
       let filterDesc = [];
-      if (filters.satker) filterDesc.push('satker dipilih');
-      if (filters.bidang) filterDesc.push('bidang dipilih');
+      if (monthlyEffectiveFilter.satker) filterDesc.push(`satker ${monthlyEffectiveFilter.satker}${monthlyEffectiveFilter.isAutoFiltered ? ' (auto-filter)' : ''}`);
+      if (monthlyEffectiveFilter.bidang) filterDesc.push(`bidang ${monthlyEffectiveFilter.bidang}${monthlyEffectiveFilter.isAutoFiltered ? ' (auto-filter)' : ''}`);
       if (filters.user_id) filterDesc.push('user dipilih');
       
       const filterText = filterDesc.length > 0 ? ` dengan filter: ${filterDesc.join(', ')}` : '';
@@ -405,6 +450,19 @@ const MonthlyPresensiPage: React.FC = () => {
           </Card>
         </Col>
 
+        {/* Auto-filter Alert */}
+        {autoFilter.isAutoFiltered && (
+          <Col span={24}>
+            <Alert
+              message="Filter Otomatis Aktif"
+              description={autoFilter.filterReason}
+              type="info"
+              icon={<InfoCircleOutlined />}
+              showIcon
+            />
+          </Col>
+        )}
+
         {/* Filters */}
         <Col span={24}>
           <Card title="Filter" size="small">
@@ -432,21 +490,24 @@ const MonthlyPresensiPage: React.FC = () => {
                   ))}
                 </Select>
               </Col>
-              <Col xs={24} sm={6}>
-                <DebounceSelect
-                  placeholder="Filter Satker"
-                  value={filters.satker ? { label: satkerOptions.find(opt => opt.value === filters.satker)?.label || '', value: filters.satker } : undefined}
-                  onChange={(value: any) => {
-                    const selectedValue = value?.value || '';
-                    handleFilterChange('satker', selectedValue);
-                    handleFilterChange('bidang', ''); // Reset bidang when satker changes
-                  }}
-                  fetchOptions={fetchSatkerOptionsForSelect}
-                  style={{ width: '100%' }}
-                  allowClear
-                  loading={loadingSatker}
-                />
-              </Col>
+              {/* Filter Satker - hanya tampil untuk Superadmin */}
+              {useAuthStore.getState().user?.role === 'super_admin' && (
+                <Col xs={24} sm={6}>
+                  <DebounceSelect
+                    placeholder="Filter Satker"
+                    value={filters.satker ? { label: satkerOptions.find(opt => opt.value === filters.satker)?.label || '', value: filters.satker } : undefined}
+                    onChange={(value: any) => {
+                      const selectedValue = value?.value || '';
+                      handleFilterChange('satker', selectedValue);
+                      handleFilterChange('bidang', ''); // Reset bidang when satker changes
+                    }}
+                    fetchOptions={fetchSatkerOptionsForSelect}
+                    style={{ width: '100%' }}
+                    allowClear
+                    loading={loadingSatker}
+                  />
+                </Col>
+              )}
               <Col xs={24} sm={6}>
                 <DebounceSelect
                   placeholder="Filter Bidang"
@@ -459,7 +520,13 @@ const MonthlyPresensiPage: React.FC = () => {
                   style={{ width: '100%' }}
                   allowClear
                   loading={loadingBidang}
-                  disabled={!filters.satker || filters.satker === '' || filters.satker === 'null'}
+                  disabled={
+                    // Untuk Superadmin: disabled jika tidak ada satker yang dipilih
+                    useAuthStore.getState().user?.role === 'super_admin' 
+                      ? (!filters.satker || filters.satker === '' || filters.satker === 'null')
+                      // Untuk Admin OPD/UPT: selalu enabled karena satker sudah auto-set
+                      : false
+                  }
                 />
               </Col>
             </Row>
