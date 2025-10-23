@@ -14,11 +14,11 @@ export interface AdminOpd {
 }
 
 export interface AdminUpt {
-  admupt_id: string;
+  admupt_id: number;
   id_skpd: string;
   id_satker: string;
   id_bidang: string;
-  kategori: string;
+  kategori: number;
   umum: string;
 }
 
@@ -35,6 +35,7 @@ export interface LoginResponse {
     device_id?: string | null;
   };
   admin_opd?: AdminOpd | null;
+  admin_upt?: AdminUpt | null;
 }
 
 export interface RefreshTokenRequest {
