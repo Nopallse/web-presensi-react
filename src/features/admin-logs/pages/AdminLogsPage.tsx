@@ -301,7 +301,6 @@ const AdminLogsPage: React.FC<AdminLogsPageProps> = ({ className }) => {
     presensi: 'presensi',
     device_reset: 'device_reset',
     admin_logs: 'admin_logs',
-    pengaturan: 'pengaturan'
   });
 
   const levelOptions = Object.values({

@@ -26,10 +26,10 @@ import {
   ClockCircleOutlined
 } from '@ant-design/icons';
 import { jamDinasApi } from '../services/jamDinasApi';
-import { pengaturanApi } from '../../pengaturan/services/pengaturanApi';
+import { organizationAssignmentApi } from '../services/jamDinasApi';
 
-import { getTipeJadwalLabel, getTipeJadwalDescription } from '../../pengaturan/utils/tipeJadwalUtils';
-import type { TipeJadwalOption } from '../../pengaturan/types';
+import { getTipeJadwalLabel, getTipeJadwalDescription } from '../utils/tipeJadwalUtils';
+import type { TipeJadwalOption } from '../types';
 import type { JamDinas, JamDinasFilters, StatusJamDinas } from '../types';
 import { useAuth } from '../../../store/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -89,7 +89,7 @@ const JamDinasPage: React.FC = () => {
   const fetchCurrentTipeJadwal = async () => {
     try {
       setTipeJadwalLoading(true);
-      const response = await pengaturanApi.getCurrentTipeJadwal();
+      const response = await organizationAssignmentApi.getCurrentTipeJadwal();
       const tipe = response.data.tipe as TipeJadwalOption;
       setCurrentTipeJadwal(tipe);
       setSelectedTipeJadwal(tipe);
@@ -109,7 +109,7 @@ const JamDinasPage: React.FC = () => {
     }
     try {
       setTipeJadwalSaving(true);
-      const response = await pengaturanApi.updateTipeJadwal({ tipe: selectedTipeJadwal });
+      const response = await organizationAssignmentApi.updateTipeJadwal({ tipe: selectedTipeJadwal });
       setCurrentTipeJadwal(selectedTipeJadwal);
       message.success(response.message);
       setTipeJadwalModalOpen(false);

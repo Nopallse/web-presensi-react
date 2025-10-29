@@ -32,8 +32,6 @@ import SatkerDetailPage from '../features/unit-kerja/pages/SatkerDetailPage';
 import BidangDetailPage from '../features/unit-kerja/pages/BidangDetailPage';
 import SubBidangDetailPage from '../features/unit-kerja/pages/SubBidangDetailPage';
 
-// Pengaturan
-import PengaturanPage from '../features/pengaturan/pages/PengaturanPage';
 
 // Jam Dinas
 import { JamDinasPage, JamDinasForm } from '../features/jam-dinas';
@@ -341,15 +339,7 @@ const AppRoutes: React.FC = () => {
           }
         />
         
-        {/* Pengaturan routes */}
-        <Route
-          path="/pengaturan"
-          element={
-            <ProtectedRoute>
-              <PengaturanPage />
-            </ProtectedRoute>
-          }
-        />
+        
         
         {/* Default redirects */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

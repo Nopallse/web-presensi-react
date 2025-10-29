@@ -114,7 +114,6 @@ export const ADMIN_LOG_RESOURCES = {
   PRESENSI: 'presensi',
   DEVICE_RESET: 'device_reset',
   ADMIN_LOGS: 'admin_logs',
-  PENGATURAN: 'pengaturan'
 } as const;
 
 export type AdminLogResource = typeof ADMIN_LOG_RESOURCES[keyof typeof ADMIN_LOG_RESOURCES];

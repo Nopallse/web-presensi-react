@@ -10,7 +10,11 @@ import type {
   OrganizationAssignmentDetailResponse,
   OrganizationAssignmentFilters,
   CreateOrganizationAssignmentRequest,
-  UpdateOrganizationAssignmentRequest
+  UpdateOrganizationAssignmentRequest,
+  SystemSettingsResponse,
+  TipeJadwalResponse,
+  UpdateTipeJadwalRequest,
+  UpdateTipeJadwalResponse
 } from '../types';
 
 export const jamDinasApi = {
@@ -164,6 +168,23 @@ export const organizationAssignmentApi = {
   // Delete organization assignment
   delete: async (id: number): Promise<ApiResponse> => {
     const response = await apiClient.delete<ApiResponse>(`/superadmin/jam-dinas/organization/${id}`);
+    return response.data;
+  },
+
+  getAllSettings: async (): Promise<SystemSettingsResponse> => {
+    const response = await apiClient.get<SystemSettingsResponse>('/system-settings');
+    return response.data;
+  },
+
+  // Get current tipe jadwal
+  getCurrentTipeJadwal: async (): Promise<TipeJadwalResponse> => {
+    const response = await apiClient.get<TipeJadwalResponse>('/superadmin/system-settings/tipe-jadwal');
+    return response.data;
+  },
+
+  // Update tipe jadwal global
+  updateTipeJadwal: async (data: UpdateTipeJadwalRequest): Promise<UpdateTipeJadwalResponse> => {
+    const response = await apiClient.put<UpdateTipeJadwalResponse>('/superadmin/system-settings/tipe-jadwal', data);
     return response.data;
   }
 };
