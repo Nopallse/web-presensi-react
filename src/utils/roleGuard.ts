@@ -43,15 +43,12 @@ export const roleGuard = {
         'device-reset'
       ],
       'admin-opd': [
-        'dashboard',
-        'pegawai',
         'presensi',
         'device-reset'
       ],
       'admin-upt': [
-        'dashboard',
-        'pegawai',
-        'presensi'
+        'presensi',
+        'device-reset'
       ]
     };
 
@@ -91,15 +88,12 @@ export const roleGuard = {
         { label: 'Reset Device', path: '/device-reset', icon: 'Mobile' }
       ],
       'admin-opd': [
-        { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
-        { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
         { label: 'Presensi', path: '/presensi', icon: 'Clock' },
         { label: 'Reset Device', path: '/device-reset', icon: 'Mobile' }
       ],
       'admin-upt': [
-        { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
-        { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
-        { label: 'Presensi', path: '/presensi', icon: 'Clock' }
+        { label: 'Presensi', path: '/presensi', icon: 'Clock' },
+        { label: 'Reset Device', path: '/device-reset', icon: 'Mobile' }
       ]
     };
 

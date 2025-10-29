@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Form, Input, Button, Alert, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useAuthActions } from '../../../store/authStore';
+import { useAuthActions, useAuthStore } from '../../../store/authStore';
 
 interface LoginFormData {
   username: string;
@@ -27,8 +27,16 @@ const LoginForm: React.FC = () => {
       
       message.success('Selamat datang! Anda berhasil masuk ke sistem.');
 
-      // Navigate to intended page or dashboard
-      const from = location.state?.from?.pathname || '/dashboard';
+      // Get user data from store to determine role
+      const userRole = useAuthStore.getState().user?.role;
+      
+      // Navigate based on user role
+      let defaultPath = '/dashboard';
+      if (userRole === 'admin-opd' || userRole === 'admin-upt') {
+        defaultPath = '/presensi';
+      }
+
+      const from = location.state?.from?.pathname || defaultPath;
       navigate(from, { replace: true });
     } catch (error: any) {
       let errorMessage = 'Login gagal. Silakan coba lagi.';
