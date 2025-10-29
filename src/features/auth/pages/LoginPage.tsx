@@ -8,11 +8,13 @@ import LoginForm from '../components/LoginForm';
 const { Title, Text } = Typography;
 
 const LoginPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    // Super admin redirect ke dashboard, selain itu ke /presensi
+    const redirectPath = user?.role === 'super_admin' ? '/dashboard' : '/presensi';
+    return <Navigate to={redirectPath} replace />;
   }
 
   return (

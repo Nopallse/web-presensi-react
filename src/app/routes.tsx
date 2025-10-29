@@ -59,13 +59,28 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // Public route component (redirect if authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    // Super admin redirect ke dashboard, selain itu ke /presensi
+    const redirectPath = user?.role === 'super_admin' ? '/dashboard' : '/presensi';
+    return <Navigate to={redirectPath} replace />;
   }
   
   return <>{children}</>;
+};
+
+// Root redirect component - redirects based on user role
+const RootRedirect: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Super admin redirect ke dashboard, selain itu ke /presensi
+  const redirectPath = user?.role === 'super_admin' ? '/dashboard' : '/presensi';
+  return <Navigate to={redirectPath} replace />;
 };
 
 const AppRoutes: React.FC = () => {
@@ -342,8 +357,8 @@ const AppRoutes: React.FC = () => {
         
         
         {/* Default redirects */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="*" element={<RootRedirect />} />
       </Routes>
     </BrowserRouter>
   );
