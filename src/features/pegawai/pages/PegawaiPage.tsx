@@ -208,7 +208,7 @@ const PegawaiPage: React.FC = () => {
   };
 
   const handleDetail = (pegawai: Pegawai) => {
-    navigate(`/pegawai/${pegawai.id}`);
+    navigate(`/pegawai/${pegawai.nip}`);
   };
 
   // Fetch Satker options (Level 1)
@@ -372,7 +372,7 @@ const PegawaiPage: React.FC = () => {
         <Table
           columns={columns}
           dataSource={pegawaiList}
-          rowKey="id"
+          rowKey="nip"
           loading={loading}
           size="small"
           pagination={{
