@@ -61,7 +61,7 @@ export const kegiatanApi = {
     return response.data;
   },
 
-  addLokasiToKegiatan: async (id: number, data: { lokasi_id: number; kdsatker_list: string[] }): Promise<ApiResponse> => {
+  addLokasiToKegiatan: async (id: number, data: { lokasi_id: number; kdsatker_list?: string[]; nip_list?: string[] }): Promise<ApiResponse> => {
     const response = await apiClient.post(`/superadmin/jadwal-kegiatan/${id}/lokasi`, data);
     return response.data;
   },
@@ -80,10 +80,8 @@ export const kegiatanApi = {
   },
 
   // Edit/Update Satker list for kegiatan-lokasi
-  editSatkerKegiatanLokasi: async (kegiatanId: number, lokasiId: number, kdsatkerList: string[]): Promise<ApiResponse> => {
-    const response = await apiClient.put(`/superadmin/jadwal-kegiatan/${kegiatanId}/lokasi/${lokasiId}/satker`, {
-      kdsatker_list: kdsatkerList
-    });
+  editSatkerKegiatanLokasi: async (kegiatanId: number, lokasiId: number, data: { kdsatker_list?: string[]; nip_list?: string[] }): Promise<ApiResponse> => {
+    const response = await apiClient.put(`/superadmin/jadwal-kegiatan/${kegiatanId}/lokasi/${lokasiId}/satker`, data);
     return response.data;
   },
 
@@ -110,6 +108,107 @@ export const kegiatanApi = {
   // Download Excel for specific satker in kegiatan
   downloadSatkerExcel: async (kegiatanId: number, satkerId: string): Promise<Blob> => {
     const response = await apiClient.get(`/superadmin/jadwal-kegiatan/${kegiatanId}/satker/${satkerId}/download-excel`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  // Grup Peserta Kegiatan APIs
+  // Get all grup peserta for kegiatan (optional: filter by lokasi)
+  getAllGrupPeserta: async (kegiatanId: number, lokasiId?: number): Promise<ApiResponse> => {
+    const url = lokasiId 
+      ? `/jadwal-kegiatan/${kegiatanId}/lokasi/${lokasiId}/grup-peserta`
+      : `/jadwal-kegiatan/${kegiatanId}/grup-peserta`;
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+
+  // Get all grup peserta for kegiatan with attendance data
+  getAllGrupPesertaKegiatan: async (kegiatanId: number): Promise<ApiResponse> => {
+    const response = await apiClient.get(`/jadwal-kegiatan/${kegiatanId}/grup-peserta-kehadiran`);
+    return response.data;
+  },
+
+  // Get detail grup peserta
+  getGrupPesertaById: async (idGrupPeserta: number): Promise<ApiResponse> => {
+    const response = await apiClient.get(`/jadwal-kegiatan/grup-peserta/${idGrupPeserta}`);
+    return response.data;
+  },
+
+  // Create grup peserta (support multiple lokasi via lokasi_ids in data, or single lokasi via lokasiId)
+  createGrupPeserta: async (kegiatanId: number, data: any, lokasiId?: number): Promise<ApiResponse> => {
+    // Jika lokasi_ids ada di data, gunakan endpoint baru (multiple lokasi)
+    // Jika tidak, gunakan endpoint lama (single lokasi via params)
+    if (data.lokasi_ids && Array.isArray(data.lokasi_ids) && data.lokasi_ids.length > 0) {
+      const response = await apiClient.post(`/jadwal-kegiatan/${kegiatanId}/grup-peserta`, data);
+      return response.data;
+    } else if (lokasiId) {
+      const response = await apiClient.post(`/jadwal-kegiatan/${kegiatanId}/lokasi/${lokasiId}/grup-peserta`, data);
+      return response.data;
+    } else {
+      throw new Error('Lokasi harus dipilih (minimal 1 lokasi)');
+    }
+  },
+
+  // Update grup peserta
+  updateGrupPeserta: async (idGrupPeserta: number, data: any): Promise<ApiResponse> => {
+    const response = await apiClient.put(`/jadwal-kegiatan/grup-peserta/${idGrupPeserta}`, data);
+    return response.data;
+  },
+
+  // Delete grup peserta
+  deleteGrupPeserta: async (idGrupPeserta: number): Promise<ApiResponse> => {
+    const response = await apiClient.delete(`/jadwal-kegiatan/grup-peserta/${idGrupPeserta}`);
+    return response.data;
+  },
+
+  // Get all peserta in grup
+  getPesertaGrup: async (idGrupPeserta: number): Promise<ApiResponse> => {
+    const response = await apiClient.get(`/jadwal-kegiatan/grup-peserta/${idGrupPeserta}/peserta`);
+    return response.data;
+  },
+
+  // Add peserta to grup
+  addPesertaToGrup: async (idGrupPeserta: number, data: any): Promise<ApiResponse> => {
+    const response = await apiClient.post(`/jadwal-kegiatan/grup-peserta/${idGrupPeserta}/peserta`, data);
+    return response.data;
+  },
+
+  // Import peserta from Excel
+  importPesertaFromExcel: async (idGrupPeserta: number, file: File): Promise<ApiResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post(`/jadwal-kegiatan/grup-peserta/${idGrupPeserta}/peserta/import`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  // Remove peserta from grup
+  removePesertaFromGrup: async (idGrupPeserta: number, data: any): Promise<ApiResponse> => {
+    const response = await apiClient.delete(`/jadwal-kegiatan/grup-peserta/${idGrupPeserta}/peserta`, { data });
+    return response.data;
+  },
+
+  // Get detail grup peserta dengan data kehadiran
+  getDetailGrupPesertaKegiatan: async (kegiatanId: number, grupId: number): Promise<ApiResponse> => {
+    const response = await apiClient.get(`/jadwal-kegiatan/${kegiatanId}/grup/${grupId}/detail`);
+    return response.data;
+  },
+
+  // Download Excel untuk grup peserta (khusus atau OPD)
+  downloadGrupPesertaExcel: async (kegiatanId: number, grupId: number): Promise<Blob> => {
+    const response = await apiClient.get(`/jadwal-kegiatan/${kegiatanId}/grup/${grupId}/download-excel`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  // Bulk download Excel untuk seluruh grup peserta dalam kegiatan
+  bulkDownloadGrupPesertaExcel: async (kegiatanId: number): Promise<Blob> => {
+    const response = await apiClient.get(`/jadwal-kegiatan/${kegiatanId}/grup/download-excel`, {
       responseType: 'blob'
     });
     return response.data;

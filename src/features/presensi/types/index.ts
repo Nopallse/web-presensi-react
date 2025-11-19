@@ -64,6 +64,12 @@ export interface Kehadiran {
     subf: string;
     nm_unit_kerja: string;
   };
+  // Data historis dari tabel kehadiran (data saat kehadiran dibuat)
+  NM_UNIT_KERJA?: string | null;
+  KDSATKER?: string | null;
+  BIDANGF?: string | null;
+  SUBF?: string | null;
+  nama_jabatan?: string | null;
   absen_checkin: string;
   absen_checkout: string;
   absen_apel: string;

@@ -210,9 +210,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
                   marks={{
                     50: '50m',
                     100: '100m',
-                    200: '200m',
-                    300: '300m',
-                    500: '500m'
+                    200: '200m'
                   }}
                 />
               </div>

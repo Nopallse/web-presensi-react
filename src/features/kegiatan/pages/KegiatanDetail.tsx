@@ -9,7 +9,6 @@ import {
   Spin, 
   Table,
   Empty,
-  Popconfirm,
   Typography,
   Row,
   Col,
@@ -17,7 +16,8 @@ import {
   Statistic,
   Progress,
   Tooltip,
-  Input
+  Input,
+  Badge
 } from 'antd';
 import { 
   ArrowLeftOutlined, 
@@ -25,22 +25,24 @@ import {
   CalendarOutlined,
   EnvironmentOutlined,
   PlusOutlined,
-  DeleteOutlined,
   FileTextOutlined,
   EyeOutlined,
   UserOutlined,
   CheckCircleOutlined,
   SearchOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
 import { kegiatanApi } from '../services/kegiatanApi';
+import { lokasiKegiatanApi } from '../../lokasi/services/lokasiKegiatanApi';
 import type { JadwalKegiatan, LokasiWithSatker } from '../types';
 import { JENIS_KEGIATAN_OPTIONS } from '../types';
 import { dateFormatter } from '../../../utils/dateFormatter';
-import AddLokasiModal from '../components/AddLokasiModal';
-import EditLokasiModal from '../components/EditLokasiModal';
+import GrupPesertaModal from '../components/GrupPesertaModal';
+import ManagePesertaModal from '../components/ManagePesertaModal';
+import ImportPesertaModal from '../components/ImportPesertaModal';
 import MultiLocationMap from '../../../components/MultiLocationMap';
+import type { GrupPesertaKegiatan } from '../types';
 
 const { Title, Text } = Typography;
 
@@ -49,11 +51,17 @@ const KegiatanDetail: React.FC = () => {
   const navigate = useNavigate();
   const [kegiatan, setKegiatan] = useState<JadwalKegiatan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [addLokasiModalVisible, setAddLokasiModalVisible] = useState(false);
-  const [editLokasiModalVisible, setEditLokasiModalVisible] = useState(false);
-  const [editingLokasi, setEditingLokasi] = useState<LokasiWithSatker | null>(null);
-  const [loadingAction, setLoadingAction] = useState(false);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([-0.6267, 100.1207]); // Default center (Padang)
+  const [allLokasiList, setAllLokasiList] = useState<LokasiWithSatker[]>([]);
+  
+  // State untuk grup peserta
+  const [grupPesertaList, setGrupPesertaList] = useState<GrupPesertaKegiatan[]>([]);
+  const [grupPesertaModalVisible, setGrupPesertaModalVisible] = useState(false);
+  const [editingGrup, setEditingGrup] = useState<GrupPesertaKegiatan | null>(null);
+  const [selectedLokasiForGrup, setSelectedLokasiForGrup] = useState<number | null>(null);
+  const [managePesertaModalVisible, setManagePesertaModalVisible] = useState(false);
+  const [selectedGrupForManage, setSelectedGrupForManage] = useState<GrupPesertaKegiatan | null>(null);
+  const [importPesertaModalVisible, setImportPesertaModalVisible] = useState(false);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-0.6267, 100.1207]);
   const [mapZoom, setMapZoom] = useState(12);
   const [mapLocations, setMapLocations] = useState<Array<{
     lat: number;
@@ -64,63 +72,74 @@ const KegiatanDetail: React.FC = () => {
     satker_list?: string[];
   }>>([]);
 
-  // State untuk data satker
-  const [satkerData, setSatkerData] = useState<any[]>([]);
-  const [satkerLoading, setSatkerLoading] = useState(false);
-  const [satkerSearchText, setSatkerSearchText] = useState('');
+  // State untuk data grup peserta
+  const [grupPesertaData, setGrupPesertaData] = useState<any[]>([]);
+  const [grupPesertaDataLoading, setGrupPesertaDataLoading] = useState(false);
+  const [grupPesertaSearchText, setGrupPesertaSearchText] = useState('');
   
   // State untuk loading download
   const [downloadBulkLoading, setDownloadBulkLoading] = useState(false);
-  const [downloadSatkerLoading, setDownloadSatkerLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchKegiatanDetail(parseInt(id));
-      fetchSatkerData(parseInt(id));
+      fetchGrupPesertaData(parseInt(id));
+      fetchGrupPeserta(parseInt(id));
+      fetchAllLokasi();
     }
   }, [id]);
+
+  const fetchAllLokasi = async () => {
+    try {
+      const response = await lokasiKegiatanApi.getAll({ page: 1, limit: 1000 });
+      // Response structure: { data: LokasiKegiatan[], pagination: {...} }
+      const lokasiData = response.data || [];
+      const lokasiList = lokasiData
+        .filter((lokasi: any) => lokasi.lat != null && lokasi.lng != null) // Filter out null/undefined
+        .map((lokasi: any) => ({
+          lokasi_id: lokasi.lokasi_id,
+          lat: Number(lokasi.lat), // Ensure it's a number
+          lng: Number(lokasi.lng), // Ensure it's a number
+          ket: lokasi.ket,
+          status: lokasi.status !== undefined ? lokasi.status : true,
+          range: Number(lokasi.range) || 0,
+          satker_list: []
+        }));
+      setAllLokasiList(lokasiList);
+    } catch (error: any) {
+      console.error('Error fetching all lokasi:', error);
+      message.error('Gagal memuat daftar lokasi');
+    }
+  };
+
+  const fetchGrupPeserta = async (kegiatanId: number) => {
+    try {
+      const response = await kegiatanApi.getAllGrupPeserta(kegiatanId);
+      if (response.success && response.data) {
+        setGrupPesertaList(response.data);
+      }
+    } catch (error: any) {
+      console.error('Error fetching grup peserta:', error);
+    }
+  };
 
   const fetchKegiatanDetail = async (kegiatanId: number) => {
     try {
       setLoading(true);
-      // Get basic kegiatan info
       const kegiatanResponse = await kegiatanApi.getById(kegiatanId);
+      const kegiatanData = kegiatanResponse.data;
       
-      // Get locations for this kegiatan from lokasi kegiatan API
-      const lokasiResponse = await kegiatanApi.getKegiatanLokasi(kegiatanId);
-      
-      // Transform lokasi kegiatan data to match LokasiWithSkpd interface
-      const lokasiList = lokasiResponse.data?.lokasi_list?.map((lokasi: any) => ({
-        lokasi_id: lokasi.lokasi_id,
-        lat: lokasi.lat,
-        lng: lokasi.lng,
-        ket: lokasi.ket,
-        status: lokasi.status,
-        range: lokasi.range,
-        satker_list: lokasi.satker_list || [] // Ubah dari skpd_list ke satker_list
-      })) || [];
-      
-      setKegiatan({
-        ...kegiatanResponse.data,
-        lokasi_list: lokasiList
-      });
-
-      // Update map locations
-      const locations = lokasiList.map((lokasi: LokasiWithSatker) => ({
-        lat: lokasi.lat,
-        lng: lokasi.lng,
-        range: lokasi.range,
-        ket: lokasi.ket,
-        lokasi_id: lokasi.lokasi_id,
-        satker_list: lokasi.satker_list
-      }));
-      setMapLocations(locations);
-
-      // Update map center to first location or default
-      if (locations.length > 0) {
-        setMapCenter([locations[0].lat, locations[0].lng]);
-        setMapZoom(15);
+      // Jika ada lokasi_list, pastikan lat/lng adalah number
+      if (kegiatanData.lokasi_list) {
+        kegiatanData.lokasi_list = kegiatanData.lokasi_list.map((lokasi: any) => ({
+          ...lokasi,
+          lat: Number(lokasi.lat),
+          lng: Number(lokasi.lng),
+          range: Number(lokasi.range) || 0
+        }));
       }
+      
+      setKegiatan(kegiatanData);
     } catch (error: any) {
       console.error('Error fetching kegiatan detail:', error);
       message.error('Gagal memuat detail kegiatan');
@@ -130,50 +149,43 @@ const KegiatanDetail: React.FC = () => {
     }
   };
 
-  const fetchSatkerData = async (kegiatanId: number) => {
+  const fetchGrupPesertaData = async (kegiatanId: number) => {
     try {
-      setSatkerLoading(true);
-      const response = await kegiatanApi.getAllSatkerKegiatan(kegiatanId);
-      setSatkerData(response.data || []);
+      setGrupPesertaDataLoading(true);
+      const response = await kegiatanApi.getAllGrupPesertaKegiatan(kegiatanId);
+      setGrupPesertaData(response.data || []);
     } catch (error: any) {
-      console.error('Error fetching satker data:', error);
-      message.error('Gagal memuat data satker');
+      console.error('Error fetching grup peserta data:', error);
+      message.error('Gagal memuat data grup peserta');
     } finally {
-      setSatkerLoading(false);
+      setGrupPesertaDataLoading(false);
     }
   };
 
-  // Filter satker data berdasarkan search text
-  const filteredSatkerData = satkerData.filter(satker => 
-    satker.nama_satker.toLowerCase().includes(satkerSearchText.toLowerCase())
+  // Filter grup peserta data
+  const filteredGrupPesertaData = grupPesertaData.filter(grup => 
+    grup.nama_grup.toLowerCase().includes(grupPesertaSearchText.toLowerCase()) ||
+    (grup.nama_satker && grup.nama_satker.toLowerCase().includes(grupPesertaSearchText.toLowerCase())) ||
+    (grup.lokasi && grup.lokasi.ket.toLowerCase().includes(grupPesertaSearchText.toLowerCase()))
   );
 
   // Download Excel untuk semua satker
   const handleDownloadBulkExcel = async () => {
     try {
       setDownloadBulkLoading(true);
-      const blob = await kegiatanApi.downloadBulkExcel(parseInt(id!));
-      
-      // Buat URL untuk download
+      const blob = await kegiatanApi.bulkDownloadGrupPesertaExcel(parseInt(id!));
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      
-      // Set filename berdasarkan data kegiatan
       const tanggalKegiatan = kegiatan?.tanggal_kegiatan 
         ? new Date(kegiatan.tanggal_kegiatan).toLocaleDateString('id-ID')
         : 'unknown';
       const jenisKegiatan = kegiatan?.jenis_kegiatan || 'kegiatan';
-      link.download = `Data_Satker_Kegiatan_${jenisKegiatan.replace(/\s+/g, '_')}_${tanggalKegiatan.replace(/\//g, '-')}.xlsx`;
-      
-      // Trigger download
+      link.download = `Data_Grup_Peserta_Kegiatan_${jenisKegiatan.replace(/\s+/g, '_')}_${tanggalKegiatan.replace(/\//g, '-')}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Cleanup URL
       window.URL.revokeObjectURL(url);
-      
       message.success('File Excel berhasil didownload');
     } catch (error: any) {
       console.error('Error downloading Excel:', error);
@@ -183,82 +195,26 @@ const KegiatanDetail: React.FC = () => {
     }
   };
 
-  // Download Excel untuk satker tertentu
-  const handleDownloadSatkerExcel = async (satkerId: string) => {
-    try {
-      setDownloadSatkerLoading(satkerId);
-      const blob = await kegiatanApi.downloadSatkerExcel(parseInt(id!), satkerId);
-      
-      // Buat URL untuk download
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Set filename berdasarkan data satker
-      const satker = satkerData.find(s => s.id_satker === satkerId);
-      const satkerName = satker?.nama_satker || 'satker';
-      const tanggalKegiatan = kegiatan?.tanggal_kegiatan 
-        ? new Date(kegiatan.tanggal_kegiatan).toLocaleDateString('id-ID')
-        : 'unknown';
-      link.download = `Laporan_Kehadiran_${satkerName.replace(/\s+/g, '_')}_${tanggalKegiatan.replace(/\//g, '-')}.xlsx`;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Cleanup URL
-      window.URL.revokeObjectURL(url);
-      
-      message.success('File Excel berhasil didownload');
-    } catch (error: any) {
-      console.error('Error downloading Excel:', error);
-      message.error('Gagal mendownload file Excel');
-    } finally {
-      setDownloadSatkerLoading(null);
-    }
-  };
 
-  const handleAddLokasi = async (data: { lokasi_id: number; kdsatker_list: string[] }) => {
-    if (!kegiatan) return;
-    
-    try {
-      await kegiatanApi.addLokasiToKegiatan(kegiatan.id_kegiatan, data);
-      setAddLokasiModalVisible(false);
-      // Refresh the data
-      await fetchKegiatanDetail(kegiatan.id_kegiatan);
-    } catch (error) {
-      throw error; // Let the modal handle the error
-    }
-  };
 
-  const handleRemoveLokasi = async (lokasiId: number) => {
-    if (!kegiatan) return;
-    
-    try {
-      setLoadingAction(true);
-      await kegiatanApi.removeLokasiFromKegiatan(kegiatan.id_kegiatan, lokasiId);
-      message.success('Lokasi berhasil dihapus dari kegiatan');
-      // Refresh the data
-      await fetchKegiatanDetail(kegiatan.id_kegiatan);
-    } catch (error: any) {
-      console.error('Error removing lokasi:', error);
-      message.error('Gagal menghapus lokasi');
-    } finally {
-      setLoadingAction(false);
-    }
-  };
 
-  const handleEditLokasi = (lokasi: LokasiWithSatker) => {
-    setEditingLokasi(lokasi);
-    setEditLokasiModalVisible(true);
-  };
 
-  const handleEditLokasiSuccess = async () => {
-    setEditLokasiModalVisible(false);
-    setEditingLokasi(null);
+  const handleGrupPesertaSuccess = async () => {
+    setGrupPesertaModalVisible(false);
+    setEditingGrup(null);
+    setSelectedLokasiForGrup(null);
     if (kegiatan) {
+      await fetchGrupPeserta(kegiatan.id_kegiatan);
       await fetchKegiatanDetail(kegiatan.id_kegiatan);
+      await fetchGrupPesertaData(kegiatan.id_kegiatan);
+    }
+  };
+
+  const handleManagePesertaSuccess = async () => {
+    if (kegiatan) {
+      await fetchGrupPeserta(kegiatan.id_kegiatan);
+      await fetchKegiatanDetail(kegiatan.id_kegiatan);
+      await fetchGrupPesertaData(kegiatan.id_kegiatan);
     }
   };
 
@@ -267,62 +223,94 @@ const KegiatanDetail: React.FC = () => {
     return option?.label || value;
   };
 
-  const lokasiColumns: ColumnsType<LokasiWithSatker> = [
-    {
-      title: 'Lokasi',
-      dataIndex: 'ket',
-      key: 'ket',
-      render: (text: string) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <EnvironmentOutlined style={{ color: '#1890ff' }} />
-          <Text strong style={{ fontSize: '13px' }}>{text}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Radius',
-      dataIndex: 'range',
-      key: 'range',
-      width: 80,
-      render: (range: number) => (
-        <Text style={{ fontSize: '13px' }}>{range}m</Text>
-      ),
-    },
-    {
-      title: 'Aksi',
-      key: 'action',
-      width: 100,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleEditLokasi(record)}
-            title="Edit lokasi"
-            style={{ padding: '4px' }}
-          />
-          <Popconfirm
-            title="Hapus Lokasi"
-            description="Apakah Anda yakin ingin menghapus lokasi ini dari kegiatan?"
-            onConfirm={() => handleRemoveLokasi(record.lokasi_id)}
-            okText="Ya"
-            cancelText="Tidak"
-          >
-            <Button
-              type="text"
-              icon={<DeleteOutlined />}
-              danger
-              size="small"
-              loading={loadingAction}
-              title="Hapus dari kegiatan"
-              style={{ padding: '4px' }}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  // Ambil lokasi unik dari grup peserta dan dari kegiatan untuk peta
+  useEffect(() => {
+    const lokasiMap = new Map<number, any>();
+    
+    // Ambil lokasi dari grup peserta
+    if (grupPesertaData.length > 0) {
+      grupPesertaData.forEach((grup: any) => {
+        if (grup.lokasi) {
+          if (Array.isArray(grup.lokasi)) {
+            grup.lokasi.forEach((lok: any) => {
+              // Ensure lat and lng are valid numbers
+              const lat = Number(lok.lat);
+              const lng = Number(lok.lng);
+              if (!isNaN(lat) && !isNaN(lng) && !lokasiMap.has(lok.lokasi_id)) {
+                lokasiMap.set(lok.lokasi_id, {
+                  lokasi_id: lok.lokasi_id,
+                  lat: lat,
+                  lng: lng,
+                  range: Number(lok.range) || 0,
+                  ket: lok.ket || '',
+                  satker_list: []
+                });
+              }
+            });
+          } else {
+            // Ensure lat and lng are valid numbers
+            const lat = Number(grup.lokasi.lat);
+            const lng = Number(grup.lokasi.lng);
+            if (!isNaN(lat) && !isNaN(lng) && !lokasiMap.has(grup.lokasi.lokasi_id)) {
+              lokasiMap.set(grup.lokasi.lokasi_id, {
+                lokasi_id: grup.lokasi.lokasi_id,
+                lat: lat,
+                lng: lng,
+                range: Number(grup.lokasi.range) || 0,
+                ket: grup.lokasi.ket || '',
+                satker_list: []
+              });
+            }
+          }
+        }
+      });
+    }
+    
+    // Ambil lokasi dari kegiatan (jika ada lokasi_list)
+    if (kegiatan?.lokasi_list && kegiatan.lokasi_list.length > 0) {
+      kegiatan.lokasi_list.forEach((lokasi: LokasiWithSatker) => {
+        const lat = Number(lokasi.lat);
+        const lng = Number(lokasi.lng);
+        if (!isNaN(lat) && !isNaN(lng) && !lokasiMap.has(lokasi.lokasi_id)) {
+          lokasiMap.set(lokasi.lokasi_id, {
+            lokasi_id: lokasi.lokasi_id,
+            lat: lat,
+            lng: lng,
+            range: Number(lokasi.range) || 0,
+            ket: lokasi.ket || '',
+            satker_list: lokasi.satker_list || []
+          });
+        }
+      });
+    }
+    
+    const uniqueLocations = Array.from(lokasiMap.values());
+    setMapLocations(uniqueLocations);
+    
+    if (uniqueLocations.length > 0 && !isNaN(uniqueLocations[0].lat) && !isNaN(uniqueLocations[0].lng)) {
+      setMapCenter([uniqueLocations[0].lat, uniqueLocations[0].lng]);
+      setMapZoom(15);
+    }
+  }, [grupPesertaData, kegiatan]);
+
+
+  // Hitung total statistik
+  // Ambil lokasi unik dari grup peserta
+  const uniqueLokasiIds = new Set<number>();
+  grupPesertaData.forEach((grup: any) => {
+    if (grup.lokasi) {
+      if (Array.isArray(grup.lokasi)) {
+        grup.lokasi.forEach((lok: any) => uniqueLokasiIds.add(lok.lokasi_id));
+      } else {
+        uniqueLokasiIds.add(grup.lokasi.lokasi_id);
+      }
+    }
+  });
+  const totalLokasi = uniqueLokasiIds.size;
+  const totalGrup = grupPesertaList.length;
+  const totalPeserta = grupPesertaData.reduce((sum, g) => sum + (g.total_pegawai || 0), 0);
+  const totalKehadiran = grupPesertaData.reduce((sum, g) => sum + (g.total_kehadiran || 0), 0);
+  const totalPersentase = totalPeserta > 0 ? Math.round((totalKehadiran / totalPeserta) * 100) : 0;
 
   if (loading) {
     return (
@@ -404,11 +392,57 @@ const KegiatanDetail: React.FC = () => {
 
         <Divider />
 
+        {/* Summary Cards */}
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Total Lokasi"
+                value={totalLokasi}
+                prefix={<EnvironmentOutlined style={{ color: '#1890ff' }} />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Total Grup Peserta"
+                value={totalGrup}
+                prefix={<TeamOutlined style={{ color: '#52c41a' }} />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Total Peserta"
+                value={totalPeserta}
+                prefix={<UserOutlined style={{ color: '#722ed1' }} />}
+                valueStyle={{ color: '#722ed1' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="Kehadiran"
+                value={totalKehadiran}
+                suffix={`/ ${totalPeserta}`}
+                prefix={<CheckCircleOutlined style={{ color: totalKehadiran > 0 ? '#52c41a' : '#d9d9d9' }} />}
+                valueStyle={{ color: totalKehadiran > 0 ? '#52c41a' : '#d9d9d9' }}
+              />
+              <Progress
+                percent={totalPersentase}
+                size="small"
+                strokeColor={totalPersentase >= 80 ? '#52c41a' : totalPersentase >= 50 ? '#faad14' : '#ff4d4f'}
+                style={{ marginTop: '8px' }}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-        {/* Main Content */}
-        <Row gutter={[24, 24]}>
-          {/* Left Column - Informasi Kegiatan + Peta + Table */}
-          <Col xs={24} lg={12}>
             {/* Informasi Kegiatan */}
             <Card 
               title={
@@ -419,28 +453,23 @@ const KegiatanDetail: React.FC = () => {
               }
               style={{ marginBottom: '24px' }}
             >
-              {/* Overview Cards */}
-              <Row gutter={[16, 16]} style={{ marginBottom: '16px' }}>
-          
-                <Col xs={24} sm={12}>
-                  <Card size="small" style={{ textAlign: 'center' }}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={8}>
                     <div>
-                      <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                         Tanggal Kegiatan
                       </Text>
-                      <Text strong style={{ fontSize: '14px', color: '#52c41a' }}>
+                <Text strong style={{ fontSize: '15px', color: '#52c41a' }}>
                         {dateFormatter.toIndonesian(kegiatan.tanggal_kegiatan, 'dd MMM yyyy')}
                       </Text>
                     </div>
-                  </Card>
                 </Col>
-                <Col xs={24} sm={12}>
-                <Card size="small" style={{ textAlign: 'center' }}>
+            <Col xs={24} sm={12} md={8}>
                     <div>
-                      <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                         Jam Kegiatan
                       </Text>
-                      <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>
+                <Text strong style={{ fontSize: '15px', color: '#1890ff' }}>
                         {kegiatan.jam_mulai && kegiatan.jam_selesai 
                           ? `${kegiatan.jam_mulai.substring(0, 5)} - ${kegiatan.jam_selesai.substring(0, 5)}`
                           : kegiatan.jam_mulai 
@@ -451,113 +480,59 @@ const KegiatanDetail: React.FC = () => {
                         }
                       </Text>
                     </div>
-                  </Card>
                   </Col>
-              </Row>
-
-
-              {/* Deskripsi */}
-              <Card size="small" style={{ backgroundColor: '#f8f9fa' }}>
-                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Col xs={24} sm={12} md={8}>
                   <div>
-                    <Text type="secondary" style={{ fontSize: '13px', color: 'inherit' }}>
-                      <span style={{ fontWeight: 600, fontSize: '13px', color: 'inherit' }}>
-                        Jenis Kegiatan:
-                      </span>
-                      <span style={{ fontWeight: 600, fontSize: '13px', marginLeft: 4, color: 'inherit' }}>
+                <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                  Jenis Kegiatan
+                </Text>
+                <Text strong style={{ fontSize: '15px' }}>
                         {getJenisKegiatanLabel(kegiatan.jenis_kegiatan)}
-                      </span>
                     </Text>
                   </div>
-                </div>
-                <div style={{ marginBottom: '8px' }}>
-                  <Text strong style={{ fontSize: '14px' }}>
-                    <span style={{ fontWeight: 600 }}>Deskripsi:</span>
-                    <span style={{ fontWeight: 400, marginLeft: 6 }}>{kegiatan.keterangan}</span>
+            </Col>
+            <Col xs={24}>
+              <div>
+                <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                  Deskripsi
                   </Text>
+                <Text style={{ fontSize: '14px' }}>{kegiatan.keterangan}</Text>
                 </div>
-              </Card>
+            </Col>
+          </Row>
             </Card>
 
-            {/* Table Lokasi Kegiatan */}
-            <Card 
-              title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <EnvironmentOutlined />
-                  <span>Lokasi Kegiatan</span>
-                </div>
-              }
-              extra={
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  size="middle"
-                  onClick={() => setAddLokasiModalVisible(true)}
-                >
-                  Tambah Lokasi
-                </Button>
-              }
-              size="default"
-            >
-              {kegiatan.lokasi_list && kegiatan.lokasi_list.length > 0 ? (
-                <Table
-                  columns={lokasiColumns}
-                  dataSource={kegiatan.lokasi_list}
-                  rowKey="lokasi_id"
-                  pagination={false}
-                  size="small"
-                  scroll={{ x: 400 }}
-                />
-              ) : (
-                <Empty 
-                  description={
-                    <Text type="secondary" style={{ fontSize: '13px' }}>
-                      Belum ada lokasi yang terkait dengan kegiatan ini
-                    </Text>
-                  }
-                  style={{ padding: '30px 0' }}
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              )}
-            </Card>
-          </Col>
-
-          {/* Right Column - Peta Lokasi Kegiatan */}
-          <Col xs={24} lg={12}>
+        {/* Peta Lokasi */}
+        <Row gutter={[24, 24]}>
+          <Col xs={24}>
             {mapLocations.length > 0 ? (
               <Card 
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <EnvironmentOutlined />
-                    <span>Peta Lokasi Kegiatan ({mapLocations.length} lokasi)</span>
+                    <span>Peta Lokasi</span>
                   </div>
                 }
-                size="default"
               >
-                <div style={{ height: '500px', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ height: '400px', borderRadius: '8px', overflow: 'hidden' }}>
                   <MultiLocationMap
                     center={mapCenter}
                     zoom={mapZoom}
                     locations={mapLocations}
-                    height="500px"
+                    height="400px"
                     width="100%"
                   />
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {mapLocations.map((location, index) => {
-                    const lokasiData = kegiatan?.lokasi_list?.find(l => l.lokasi_id === location.lokasi_id);
-                    return (
+                  {mapLocations.map((location, index) => (
                       <Tag 
                         key={location.lokasi_id}
                         color={index === 0 ? 'blue' : 'green'}
                         style={{ fontSize: '12px' }}
-                        title={`Satker: ${lokasiData?.satker_list?.join(', ') || 'Tidak ada'}`}
                       >
                         {location.ket} ({location.range}m)
-                        {lokasiData?.satker_list?.length ? ` - ${lokasiData.satker_list.length} Satker` : ''}
                       </Tag>
-                    );
-                  })}
+                  ))}
                 </div>
               </Card>
             ) : (
@@ -565,13 +540,12 @@ const KegiatanDetail: React.FC = () => {
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <EnvironmentOutlined />
-                    <span>Peta Lokasi Kegiatan</span>
+                    <span>Peta Lokasi</span>
                   </div>
                 }
-                size="default"
               >
                 <div style={{ 
-                  height: '600px', 
+                  height: '400px', 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center',
@@ -590,64 +564,126 @@ const KegiatanDetail: React.FC = () => {
               </Card>
             )}
           </Col>
-          {/* Table Satker */}
+        </Row>
+
+        {/* Tabel Grup Peserta dan Kehadiran */}
+        <Row gutter={[24, 24]} style={{ marginTop: '24px' }}>
           <Col span={24}>
             <Card 
               title={
-                <Space>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserOutlined />
-                  <span>Data Satker dan Kehadiran</span>
-                </Space>
+                  <span>Data Grup Peserta dan Kehadiran</span>
+                  {grupPesertaData.length > 0 && (
+                    <Badge count={grupPesertaData.length} style={{ marginLeft: '8px' }} />
+                  )}
+                </div>
               }
-              style={{ marginTop: '16px' }}
               extra={
+                <Space>
                 <Button
                   type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      setEditingGrup(null);
+                      setSelectedLokasiForGrup(null);
+                      setGrupPesertaModalVisible(true);
+                    }}
+                  >
+                    Tambah Grup Peserta
+                  </Button>
+                  <Button
                   icon={<DownloadOutlined />}
                   onClick={handleDownloadBulkExcel}
                   loading={downloadBulkLoading}
                 >
                   Download Excel
                 </Button>
+                </Space>
               }
             >
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Input
-                  placeholder="Cari nama satker..."
+                  placeholder="Cari nama grup, satker, atau lokasi..."
                   prefix={<SearchOutlined />}
-                  value={satkerSearchText}
-                  onChange={(e) => setSatkerSearchText(e.target.value)}
+                  value={grupPesertaSearchText}
+                  onChange={(e) => setGrupPesertaSearchText(e.target.value)}
                   style={{ width: 300 }}
                   allowClear
                 />
               </div>
+
               <Table
-                dataSource={filteredSatkerData}
-                loading={satkerLoading}
-                rowKey="id_satker"
+                dataSource={filteredGrupPesertaData}
+                loading={grupPesertaDataLoading}
+                rowKey="id_grup_peserta"
                 pagination={{
                   pageSize: 10,
                   showSizeChanger: true,
                   showQuickJumper: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} satker`
+                  showTotal: (total, range) => `${range[0]}-${range[1]} dari ${total} grup`
                 }}
                 columns={[
                   {
-                    title: 'Nama Satker',
-                    dataIndex: 'nama_satker',
-                    key: 'nama_satker',
-                    width: '40%',
+                    title: 'Nama Grup',
+                    dataIndex: 'nama_grup',
+                    key: 'nama_grup',
+                    width: '25%',
                     render: (text: string) => (
+                      <div>
                       <Text strong style={{ fontSize: '14px' }}>
                         {text}
                       </Text>
+                      </div>
                     )
+                  },
+                  {
+                    title: 'Jenis',
+                    dataIndex: 'jenis_grup',
+                    key: 'jenis_grup',
+                    width: '10%',
+                    render: (jenis: string) => (
+                      <Tag color={jenis === 'opd' ? 'blue' : 'green'}>
+                        {jenis === 'opd' ? 'OPD' : 'Khusus'}
+                      </Tag>
+                    )
+                  },
+                  {
+                    title: 'Lokasi',
+                    dataIndex: 'lokasi',
+                    key: 'lokasi',
+                    width: '20%',
+                    render: (lokasi: any) => {
+                      if (!lokasi) {
+                        return <Text type="secondary" style={{ fontSize: '12px' }}>-</Text>;
+                      }
+                      // Jika lokasi adalah array (grup digabung dari beberapa lokasi)
+                      if (Array.isArray(lokasi)) {
+                        if (lokasi.length === 0) {
+                          return <Text type="secondary" style={{ fontSize: '12px' }}>-</Text>;
+                        }
+                        if (lokasi.length === 1) {
+                          return <Text style={{ fontSize: '12px' }}>{lokasi[0].ket}</Text>;
+                        }
+                        // Tampilkan semua lokasi dengan tooltip
+                        const lokasiNames = lokasi.map((l: any) => l.ket).join(', ');
+                        return (
+                          <Tooltip title={lokasiNames}>
+                            <Text style={{ fontSize: '12px' }}>
+                              {lokasi.length} lokasi
+                            </Text>
+                          </Tooltip>
+                        );
+                      }
+                      // Jika lokasi adalah object tunggal
+                      return <Text style={{ fontSize: '12px' }}>{lokasi.ket}</Text>;
+                    }
                   },
                   {
                     title: 'Total Pegawai',
                     dataIndex: 'total_pegawai',
                     key: 'total_pegawai',
-                    width: '15%',
+                    width: '12%',
                     align: 'center',
                     sorter: (a: any, b: any) => a.total_pegawai - b.total_pegawai,
                     render: (value: number) => (
@@ -662,7 +698,7 @@ const KegiatanDetail: React.FC = () => {
                     title: 'Kehadiran',
                     dataIndex: 'total_kehadiran',
                     key: 'total_kehadiran',
-                    width: '15%',
+                    width: '12%',
                     align: 'center',
                     render: (value: number) => (
                       <Statistic
@@ -673,57 +709,37 @@ const KegiatanDetail: React.FC = () => {
                     )
                   },
                   {
-                    title: 'Persentase',
-                    key: 'persentase',
-                    width: '20%',
-                    align: 'center',
-                    sorter: (a: any, b: any) => {
-                      const persentaseA = a.total_pegawai > 0 ? Math.round((a.total_kehadiran / a.total_pegawai) * 100) : 0;
-                      const persentaseB = b.total_pegawai > 0 ? Math.round((b.total_kehadiran / b.total_pegawai) * 100) : 0;
-                      return persentaseA - persentaseB;
-                    },
-                    render: (_, record: any) => {
-                      const persentase = record.total_pegawai > 0 
-                        ? Math.round((record.total_kehadiran / record.total_pegawai) * 100) 
-                        : 0;
-                      
-                      return (
-                        <Tooltip title={`${record.total_kehadiran} dari ${record.total_pegawai} pegawai`}>
-                          <Progress
-                            percent={persentase}
-                            size="small"
-                            strokeColor={persentase >= 80 ? '#52c41a' : persentase >= 50 ? '#faad14' : '#ff4d4f'}
-                            format={() => `${persentase}%`}
-                          />
-                        </Tooltip>
-                      );
-                    }
-                  },
-                  {
                     title: 'Aksi',
                     key: 'action',
-                    width: '15%',
+                    width: '20%',
                     align: 'center',
-                    render: (_, record: any) => (
+                    render: (_, record: any) => {
+                      // Cari grup lengkap dari grupPesertaList
+                      const grupFull = grupPesertaList.find(g => g.id_grup_peserta === record.id_grup_peserta);
+                      
+                      return (
                       <Space size="small">
                         <Button
-                          type="primary"
                           size="small"
                           icon={<EyeOutlined />}
-                          onClick={() => navigate(`/kegiatan/${id}/satker/${record.id_satker}`)}
+                          onClick={() => {
+                            if (grupFull) {
+                              setSelectedGrupForManage(grupFull);
+                              setManagePesertaModalVisible(true);
+                            }
+                          }}
                         >
-                          Detail
+                          Kelola
                         </Button>
                         <Button
                           size="small"
-                          icon={<DownloadOutlined />}
-                          onClick={() => handleDownloadSatkerExcel(record.id_satker)}
-                          loading={downloadSatkerLoading === record.id_satker}
+                          onClick={() => navigate(`/kegiatan/${id}/grup/${record.id_grup_peserta}`)}
                         >
-                          Download
+                          Lihat Detail
                         </Button>
                       </Space>
-                    )
+                      );
+                    }
                   }
                 ]}
               />
@@ -732,31 +748,52 @@ const KegiatanDetail: React.FC = () => {
         </Row>
 
         {/* Modals */}
-        <AddLokasiModal
-          visible={addLokasiModalVisible}
-          onCancel={() => setAddLokasiModalVisible(false)}
-          onSuccess={() => setAddLokasiModalVisible(false)}
-          kegiatanId={kegiatan.id_kegiatan}
-          existingLokasiIds={kegiatan.lokasi_list?.map(l => l.lokasi_id) || []}
-          onAddLokasi={handleAddLokasi}
+        <GrupPesertaModal
+          visible={grupPesertaModalVisible}
+          onCancel={() => {
+            setGrupPesertaModalVisible(false);
+            setEditingGrup(null);
+            setSelectedLokasiForGrup(null);
+          }}
+          onSuccess={handleGrupPesertaSuccess}
+          kegiatanId={kegiatan?.id_kegiatan || 0}
+          lokasiId={selectedLokasiForGrup || undefined}
+          lokasiList={allLokasiList}
+          editingGrup={editingGrup}
         />
 
-        {editingLokasi && (
-          <EditLokasiModal
-            visible={editLokasiModalVisible}
-            onCancel={() => {
-              setEditLokasiModalVisible(false);
-              setEditingLokasi(null);
-            }}
-            onSuccess={handleEditLokasiSuccess}
-            kegiatanId={kegiatan.id_kegiatan}
-            currentLokasi={editingLokasi}
-            existingLokasiIds={kegiatan.lokasi_list?.map(l => l.lokasi_id) || []}
-          />
-        )}
+        <ManagePesertaModal
+          visible={managePesertaModalVisible}
+          onCancel={() => {
+            setManagePesertaModalVisible(false);
+            setSelectedGrupForManage(null);
+          }}
+          onSuccess={handleManagePesertaSuccess}
+          grup={selectedGrupForManage}
+          kegiatanId={kegiatan?.id_kegiatan}
+          onImportClick={() => {
+            setManagePesertaModalVisible(false);
+            setImportPesertaModalVisible(true);
+          }}
+        />
+
+        <ImportPesertaModal
+          visible={importPesertaModalVisible}
+          onCancel={() => {
+            setImportPesertaModalVisible(false);
+          }}
+          onSuccess={() => {
+            setImportPesertaModalVisible(false);
+            setManagePesertaModalVisible(true);
+            handleManagePesertaSuccess();
+          }}
+          grup={selectedGrupForManage}
+        />
+
       </Card>
     </div>
   );
 };
 
 export default KegiatanDetail;
+

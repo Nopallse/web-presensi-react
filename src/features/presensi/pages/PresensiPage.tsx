@@ -13,15 +13,12 @@ import {
   Col,
   Typography,
   Tooltip,
-  Tabs,
   Alert
 } from 'antd';
 import {
   SearchOutlined,
   DownloadOutlined,
-  ReloadOutlined,
   CalendarOutlined,
-  BarChartOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -33,19 +30,13 @@ import type {
   Kehadiran,
   KehadiranFilters,
   FilterState,
-  ExportFilters,
-  MonthlyAttendanceFilters,
-  MonthlyAttendanceData
+  ExportFilters
 } from '../types';
 
 const { Option } = Select;
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 
 const PresensiPage: React.FC = () => {
-  
-  // Active tab state
-  const [activeTab, setActiveTab] = useState<'harian' | 'bulanan'>('harian');
   
   // Admin auto-filter hooks
   const autoFilter = useAdminAutoFilter();
@@ -61,10 +52,6 @@ const PresensiPage: React.FC = () => {
     showQuickJumper: true,
     pageSizeOptions: ['10', '20', '50', '100']
   });
-
-  // Bulanan data state
-  const [bulananData, setBulananData] = useState<MonthlyAttendanceData | null>(null);
-  const [bulananLoading, setBulananLoading] = useState(false);
 
   // Export loading
   const [exportLoading, setExportLoading] = useState(false);
@@ -154,18 +141,8 @@ const PresensiPage: React.FC = () => {
     }
   });
 
-  // Bulanan filter state
-  const [bulananFilters, setBulananFilters] = useState<MonthlyAttendanceFilters>({
-    year: new Date().getFullYear(),
-    month: new Date().getMonth() + 1,
-    satker: undefined,
-    bidang: undefined,
-    user_id: undefined
-  });
-
-  // Effective filters untuk harian dan bulanan
+  // Effective filters untuk harian
   const harianEffectiveFilter = useEffectiveFilter(harianFilters.satker, harianFilters.bidang);
-  const bulananEffectiveFilter = useEffectiveFilter(bulananFilters.satker, bulananFilters.bidang);
 
   // Fetch data when component mounts or filters change
   useEffect(() => {
@@ -176,14 +153,12 @@ const PresensiPage: React.FC = () => {
   // Auto-filter when filters change (no manual filter button needed)
   // Use debounce for search to avoid too many API calls
   useEffect(() => {
-    if (activeTab === 'harian') {
-      const debounceTimer = setTimeout(() => {
-        fetchHarianData();
-      }, harianFilters.search ? 500 : 0); // 500ms debounce for search, immediate for other filters
+    const debounceTimer = setTimeout(() => {
+      fetchHarianData();
+    }, harianFilters.search ? 500 : 0); // 500ms debounce for search, immediate for other filters
 
-      return () => clearTimeout(debounceTimer);
-    }
-  }, [activeTab, harianFilters.selectedDate, harianFilters.search, harianFilters.lokasi_id, harianFilters.satker, harianFilters.bidang, harianFilters.status, harianFilters.pagination.current, harianFilters.pagination.pageSize]);
+    return () => clearTimeout(debounceTimer);
+  }, [harianFilters.selectedDate, harianFilters.search, harianFilters.lokasi_id, harianFilters.satker, harianFilters.bidang, harianFilters.status, harianFilters.pagination.current, harianFilters.pagination.pageSize]);
 
   // Load bidang options when satker changes atau untuk Admin OPD/UPT
   useEffect(() => {
@@ -203,12 +178,6 @@ const PresensiPage: React.FC = () => {
       setBidangOptions([{ label: '🚫 Tanpa Bidang', value: 'null' }]);
     }
   }, [harianFilters.satker]);
-
-  useEffect(() => {
-    if (activeTab === 'bulanan') {
-      fetchBulananData();
-    }
-  }, [activeTab, bulananFilters]);
 
   const fetchHarianData = async () => {
     setHarianLoading(true);
@@ -244,36 +213,6 @@ const PresensiPage: React.FC = () => {
     } finally {
       setHarianLoading(false);
     }
-  };
-
-  const fetchBulananData = async () => {
-    setBulananLoading(true);
-    try {
-      const apiFilters: MonthlyAttendanceFilters = {
-        ...bulananFilters,
-        satker: bulananEffectiveFilter.satker || undefined,
-        bidang: bulananEffectiveFilter.bidang || undefined
-      };
-
-      console.log('Bulanan API Filters:', apiFilters);
-      console.log('Auto-filter reason:', bulananEffectiveFilter.filterReason);
-
-      const response = await presensiApi.getMonthlyAttendanceByFilter(apiFilters);
-      
-      if (response.success) {
-        setBulananData(response.data);
-      }
-    } catch (error: any) {
-      console.error('Error fetching bulanan data:', error);
-      message.error(error.message || 'Gagal memuat data bulanan');
-    } finally {
-      setBulananLoading(false);
-    }
-  };
-
-  // Handle bulanan filter change
-  const handleBulananFilterChange = (key: keyof MonthlyAttendanceFilters, value: any) => {
-    setBulananFilters(prev => ({ ...prev, [key]: value }));
   };
 
   // Handle table pagination change for harian
@@ -328,42 +267,6 @@ const PresensiPage: React.FC = () => {
     }
   };
 
-  const handleExportBulanan = async () => {
-    console.log('Export bulanan clicked'); // Debug log
-    console.log('bulananFilters:', bulananFilters); // Debug filters
-    
-    setExportLoading(true);
-    try {
-      const exportFilters: ExportFilters = {
-        month: bulananFilters.month,
-        year: bulananFilters.year,
-        satker: bulananEffectiveFilter.satker || undefined,
-        bidang: bulananEffectiveFilter.bidang || undefined,
-        user_id: bulananFilters.user_id || undefined
-      };
-      
-      console.log('Export Bulanan Filters:', exportFilters); // Debug log
-      console.log('Auto-filter reason:', bulananEffectiveFilter.filterReason);
-      console.log('Calling presensiApi.exportAndDownloadBulanan...'); // Debug API call
-      await presensiApi.exportAndDownloadBulanan(exportFilters);
-      console.log('Export completed successfully'); // Debug success
-      
-      // Create descriptive success message
-      let filterDesc = [];
-      if (bulananEffectiveFilter.satker) filterDesc.push(`satker ${bulananEffectiveFilter.satker}${bulananEffectiveFilter.isAutoFiltered ? ' (auto-filter)' : ''}`);
-      if (bulananEffectiveFilter.bidang) filterDesc.push(`bidang ${bulananEffectiveFilter.bidang}${bulananEffectiveFilter.isAutoFiltered ? ' (auto-filter)' : ''}`);
-      if (bulananFilters.user_id) filterDesc.push('user dipilih');
-      
-      const filterText = filterDesc.length > 0 ? ` dengan filter: ${filterDesc.join(', ')}` : '';
-      message.success(`Export bulanan berhasil diunduh${filterText}`);
-    } catch (error: any) {
-      console.error('Export error:', error); // Debug log
-      message.error(error.message || 'Gagal export data bulanan');
-    } finally {
-      setExportLoading(false);
-    }
-  };
-
   // Render apel status
   const renderApelStatus = (status: string | null | undefined, type: 'pagi' | 'sore') => {
     if (!status) return <Text type="secondary">-</Text>;
@@ -397,15 +300,31 @@ const PresensiPage: React.FC = () => {
       )
     },
     {
-      title: 'ID & Nama Unit Kerja',
-      key: 'id_nama_unit_kerja',
+      title: 'Unit Kerja & Jabatan',
+      key: 'unit_kerja_jabatan',
       width: 250,
       render: (_: any, record: Kehadiran) => {
-        const unitKerjaId = `${record.pegawai.kdsatker}/${record.pegawai.bidangf}/${record.pegawai.subf}`;
+        // Gunakan data historis jika ada, jika tidak gunakan data pegawai saat ini
+        const kdsatker = record.KDSATKER || record.pegawai.kdsatker || '-';
+        const bidangf = record.BIDANGF || record.pegawai.bidangf || '-';
+        const subf = record.SUBF || record.pegawai.subf || null;
+        const nmUnitKerja = record.NM_UNIT_KERJA || record.pegawai.nm_unit_kerja || '-';
+        const namaJabatan = record.nama_jabatan || '-';
+        
+        const unitKerjaId = subf 
+          ? `${kdsatker}/${bidangf}/${subf}` 
+          : `${kdsatker}/${bidangf}`;
+        
         return (
           <div>
-            <div><Text code>{unitKerjaId}</Text></div>
-            <div><Text>{record.pegawai.nm_unit_kerja}</Text></div>
+            <div>
+              <Tooltip title={nmUnitKerja !== '-' ? nmUnitKerja : 'Nama unit kerja tidak tersedia'}>
+                <Text code>{unitKerjaId}</Text>
+              </Tooltip>
+            </div>
+            {namaJabatan && namaJabatan !== '-' && (
+              <div><Text>{namaJabatan}</Text></div>
+            )}
           </div>
         );
       }
@@ -461,82 +380,6 @@ const PresensiPage: React.FC = () => {
     }
   ];
 
-  // Bulanan table columns
-  const bulananColumns = [
-    {
-      title: 'Tanggal',
-      dataIndex: 'date',
-      key: 'date',
-      width: 120,
-      render: (date: string) => (
-        <Space>
-          <CalendarOutlined />
-          <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
-        </Space>
-      )
-    },
-    {
-      title: 'Total',
-      dataIndex: 'total',
-      key: 'total',
-      width: 80,
-      align: 'center' as const,
-      render: (value: number) => (
-        <Tag color="blue">{value}</Tag>
-      )
-    },
-    {
-      title: 'Hadir',
-      dataIndex: 'HADIR',
-      key: 'HADIR',
-      width: 80,
-      align: 'center' as const,
-      render: (value: number) => (
-        <Tag color={value > 0 ? 'green' : 'default'}>{value}</Tag>
-      )
-    },
-    {
-      title: 'HAP',
-      dataIndex: 'HAP',
-      key: 'HAP',
-      width: 60,
-      align: 'center' as const,
-      render: (value: number) => (
-        <Tag color={value > 0 ? 'green' : 'default'}>{value}</Tag>
-      )
-    },
-    {
-      title: 'TAP',
-      dataIndex: 'TAP',
-      key: 'TAP',
-      width: 60,
-      align: 'center' as const,
-      render: (value: number) => (
-        <Tag color={value > 0 ? 'orange' : 'default'}>{value}</Tag>
-      )
-    },
-    {
-      title: 'HAS',
-      dataIndex: 'HAS',
-      key: 'HAS',
-      width: 60,
-      align: 'center' as const,
-      render: (value: number) => (
-        <Tag color={value > 0 ? 'green' : 'default'}>{value}</Tag>
-      )
-    },
-    {
-      title: 'CP',
-      dataIndex: 'CP',
-      key: 'CP',
-      width: 60,
-      align: 'center' as const,
-      render: (value: number) => (
-        <Tag color={value > 0 ? 'red' : 'default'}>{value}</Tag>
-      )
-    }
-  ];
-
   return (
     <div style={{ padding: '24px', maxWidth: '100%', overflow: 'hidden' }}>
       <Row gutter={[0, 16]}>
@@ -553,33 +396,22 @@ const PresensiPage: React.FC = () => {
               </Col>
               <Col>
                 <Space>
-                  {activeTab === 'harian' ? (
-                    <Tooltip 
-                      title={!harianFilters.selectedDate 
-                        ? 'Pilih tanggal terlebih dahulu' 
-                        : 'Export data harian sesuai filter yang aktif'
-                      }
-                    >
-                      <Button
-                        icon={<DownloadOutlined />}
-                        onClick={handleExportHarian}
-                        loading={exportLoading}
-                        disabled={!harianFilters.selectedDate}
-                        type="primary"
-                      >
-                        Export Harian
-                      </Button>
-                    </Tooltip>
-                  ) : (
+                  <Tooltip 
+                    title={!harianFilters.selectedDate 
+                      ? 'Pilih tanggal terlebih dahulu' 
+                      : 'Export data harian sesuai filter yang aktif'
+                    }
+                  >
                     <Button
                       icon={<DownloadOutlined />}
-                      onClick={handleExportBulanan}
+                      onClick={handleExportHarian}
                       loading={exportLoading}
+                      disabled={!harianFilters.selectedDate}
                       type="primary"
                     >
-                      Export Bulanan
+                      Export Harian
                     </Button>
-                  )}
+                  </Tooltip>
                 </Space>
               </Col>
             </Row>
@@ -596,228 +428,106 @@ const PresensiPage: React.FC = () => {
               />
             )}
 
-            <Tabs
-              activeKey={activeTab}
-              onChange={(key) => setActiveTab(key as 'harian' | 'bulanan')}
-              size="large"
-            >
-              <TabPane
-                tab={
-                  <Space>
-                    <CalendarOutlined />
-                    Harian
-                  </Space>
-                }
-                key="harian"
-              >
-                {/* Harian Filter Section */}
-                <Card size="small" style={{ marginBottom: 16 }}>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} sm={12} lg={5}>
-                      <Input
-                        placeholder="Cari pegawai atau NIP..."
-                        prefix={<SearchOutlined />}
-                        value={harianFilters.search}
-                        onChange={(e) => setHarianFilters(prev => ({ ...prev, search: e.target.value }))}
-                        allowClear
-                      />
-                    </Col>
-                    <Col xs={24} sm={12} lg={6}>
-                      <DatePicker
-                        style={{ width: '100%' }}
-                        placeholder="Pilih Tanggal"
-                        value={harianFilters.selectedDate ? dayjs(harianFilters.selectedDate) : null}
-                        onChange={(date) => {
-                          setHarianFilters(prev => ({
-                            ...prev,
-                            selectedDate: date ? date.format('YYYY-MM-DD') : null
-                          }));
-                        }}
-                        allowClear
-                      />
-                    </Col>
-                    {/* Filter Satker - hanya tampil untuk Superadmin */}
-                    {useAuthStore.getState().user?.role === 'super_admin' && (
-                      <Col xs={24} sm={12} lg={4}>
-                        <DebounceSelect
-                          placeholder="Pilih Satker"
-                          value={harianFilters.satker ? { label: satkerOptions.find(opt => opt.value === harianFilters.satker)?.label || '', value: harianFilters.satker } : undefined}
-                          onChange={(value: any) => {
-                            const selectedValue = value?.value || '';
-                            setHarianFilters(prev => ({ 
-                              ...prev, 
-                              satker: selectedValue,
-                              bidang: '' // Reset bidang when satker changes
-                            }));
-                          }}
-                          fetchOptions={fetchSatkerOptionsForSelect}
-                          style={{ width: '100%' }}
-                          allowClear
-                          loading={loadingSatker}
-                        />
-                      </Col>
-                    )}
-                    <Col xs={24} sm={12} lg={4}>
-                      <DebounceSelect
-                        placeholder="Pilih Bidang"
-                        value={harianFilters.bidang ? { label: bidangOptions.find(opt => opt.value === harianFilters.bidang)?.label || '', value: harianFilters.bidang } : undefined}
-                        onChange={(value: any) => {
-                          const selectedValue = value?.value || '';
-                          setHarianFilters(prev => ({ ...prev, bidang: selectedValue }));
-                        }}
-                        fetchOptions={fetchBidangOptionsForSelect}
-                        style={{ width: '100%' }}
-                        allowClear
-                        loading={loadingBidang}
-                        disabled={
-                          // Untuk Superadmin: disabled jika tidak ada satker yang dipilih
-                          useAuthStore.getState().user?.role === 'super_admin' 
-                            ? (!harianFilters.satker || harianFilters.satker === 'null')
-                            // Untuk Admin OPD/UPT: selalu enabled karena satker sudah auto-set
-                            : false
-                        }
-                      />
-                    </Col>
-                    <Col xs={24} sm={12} lg={4}>
-                      <Select
-                        placeholder="Status"
-                        value={harianFilters.status || undefined}
-                        onChange={(value) => setHarianFilters(prev => ({ ...prev, status: value || '' }))}
-                        style={{ width: '100%' }}
-                        allowClear
-                      >
-                        <Option value="HAP">Hadir Apel Pagi</Option>
-                        <Option value="TAP">Telat Apel Pagi</Option>
-                        <Option value="HAS">Hadir Apel Sore</Option>
-                        <Option value="CP">Cepat Pulang</Option>
-                      </Select>
-                    </Col>
-                  </Row>
-                </Card>
+            {/* Harian Filter Section */}
+            <Card size="small" style={{ marginBottom: 16 }}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} lg={5}>
+                  <Input
+                    placeholder="Cari pegawai atau NIP..."
+                    prefix={<SearchOutlined />}
+                    value={harianFilters.search}
+                    onChange={(e) => setHarianFilters(prev => ({ ...prev, search: e.target.value }))}
+                    allowClear
+                  />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                  <DatePicker
+                    style={{ width: '100%' }}
+                    placeholder="Pilih Tanggal"
+                    value={harianFilters.selectedDate ? dayjs(harianFilters.selectedDate) : null}
+                    onChange={(date) => {
+                      setHarianFilters(prev => ({
+                        ...prev,
+                        selectedDate: date ? date.format('YYYY-MM-DD') : null
+                      }));
+                    }}
+                    allowClear
+                  />
+                </Col>
+                {/* Filter Satker - hanya tampil untuk Superadmin */}
+                {useAuthStore.getState().user?.role === 'super_admin' && (
+                  <Col xs={24} sm={12} lg={4}>
+                    <DebounceSelect
+                      placeholder="Pilih Satker"
+                      value={harianFilters.satker ? { label: satkerOptions.find(opt => opt.value === harianFilters.satker)?.label || '', value: harianFilters.satker } : undefined}
+                      onChange={(value: any) => {
+                        const selectedValue = value?.value || '';
+                        setHarianFilters(prev => ({ 
+                          ...prev, 
+                          satker: selectedValue,
+                          bidang: '' // Reset bidang when satker changes
+                        }));
+                      }}
+                      fetchOptions={fetchSatkerOptionsForSelect}
+                      style={{ width: '100%' }}
+                      allowClear
+                      loading={loadingSatker}
+                    />
+                  </Col>
+                )}
+                <Col xs={24} sm={12} lg={4}>
+                  <DebounceSelect
+                    placeholder="Pilih Bidang"
+                    value={harianFilters.bidang ? { label: bidangOptions.find(opt => opt.value === harianFilters.bidang)?.label || '', value: harianFilters.bidang } : undefined}
+                    onChange={(value: any) => {
+                      const selectedValue = value?.value || '';
+                      setHarianFilters(prev => ({ ...prev, bidang: selectedValue }));
+                    }}
+                    fetchOptions={fetchBidangOptionsForSelect}
+                    style={{ width: '100%' }}
+                    allowClear
+                    loading={loadingBidang}
+                    disabled={
+                      // Untuk Superadmin: disabled jika tidak ada satker yang dipilih
+                      useAuthStore.getState().user?.role === 'super_admin' 
+                        ? (!harianFilters.satker || harianFilters.satker === 'null')
+                        // Untuk Admin OPD/UPT: selalu enabled karena satker sudah auto-set
+                        : false
+                    }
+                  />
+                </Col>
+                <Col xs={24} sm={12} lg={4}>
+                  <Select
+                    placeholder="Status"
+                    value={harianFilters.status || undefined}
+                    onChange={(value) => setHarianFilters(prev => ({ ...prev, status: value || '' }))}
+                    style={{ width: '100%' }}
+                    allowClear
+                  >
+                    <Option value="HAP">Hadir Apel Pagi</Option>
+                    <Option value="TAP">Telat Apel Pagi</Option>
+                    <Option value="HAS">Hadir Apel Sore</Option>
+                    <Option value="CP">Cepat Pulang</Option>
+                  </Select>
+                </Col>
+              </Row>
+            </Card>
 
-                {/* Harian Table */}
-                <Table
-                  columns={harianColumns}
-                  dataSource={harianData}
-                  rowKey={(record) => `${record.pegawai.nip}-${record.absen_tgl}`}
-                  loading={harianLoading}
-                  pagination={{
-                    ...harianPagination,
-                    showTotal: (total, range) =>
-                      `${range[0]}-${range[1]} dari ${total} data`,
-                  }}
-                  onChange={handleHarianTableChange}
-                  scroll={{ x: 900 }}
-                  size="middle"
-                />
-              </TabPane>
-
-              <TabPane
-                tab={
-                  <Space>
-                    <BarChartOutlined />
-                    Bulanan
-                  </Space>
-                }
-                key="bulanan"
-              >
-                {/* Bulanan Filter Section */}
-                <Card size="small" style={{ marginBottom: 16 }}>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} sm={6}>
-                      <DatePicker
-                        picker="year"
-                        placeholder="Pilih Tahun"
-                        value={bulananFilters.year ? dayjs().year(bulananFilters.year) : null}
-                        onChange={(date) => handleBulananFilterChange('year', date?.year())}
-                        style={{ width: '100%' }}
-                      />
-                    </Col>
-                    <Col xs={24} sm={6}>
-                      <Select
-                        placeholder="Pilih Bulan"
-                        value={bulananFilters.month}
-                        onChange={(value) => handleBulananFilterChange('month', value)}
-                        style={{ width: '100%' }}
-                      >
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <Option key={i + 1} value={i + 1}>
-                            {dayjs().month(i).format('MMMM')}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Col>
-                    {/* Filter Satker untuk Bulanan - hanya tampil untuk Superadmin */}
-                    {useAuthStore.getState().user?.role === 'super_admin' && (
-                      <Col xs={24} sm={6}>
-                        <DebounceSelect
-                          placeholder="Filter Satker"
-                          value={bulananFilters.satker ? { label: satkerOptions.find(opt => opt.value === bulananFilters.satker)?.label || '', value: bulananFilters.satker } : undefined}
-                          onChange={(value: any) => {
-                            const selectedValue = value?.value || undefined;
-                            handleBulananFilterChange('satker', selectedValue);
-                            handleBulananFilterChange('bidang', undefined); // Reset bidang when satker changes
-                          }}
-                          fetchOptions={fetchSatkerOptionsForSelect}
-                          style={{ width: '100%' }}
-                          allowClear
-                          loading={loadingSatker}
-                        />
-                      </Col>
-                    )}
-                    <Col xs={24} sm={6}>
-                      <DebounceSelect
-                        placeholder="Filter Bidang"
-                        value={bulananFilters.bidang ? { label: bidangOptions.find(opt => opt.value === bulananFilters.bidang)?.label || '', value: bulananFilters.bidang } : undefined}
-                        onChange={(value: any) => {
-                          const selectedValue = value?.value || undefined;
-                          handleBulananFilterChange('bidang', selectedValue);
-                        }}
-                        fetchOptions={fetchBidangOptionsForSelect}
-                        style={{ width: '100%' }}
-                        allowClear
-                        loading={loadingBidang}
-                        disabled={
-                          // Untuk Superadmin: disabled jika tidak ada satker yang dipilih
-                          useAuthStore.getState().user?.role === 'super_admin' 
-                            ? (!bulananFilters.satker || bulananFilters.satker === 'null')
-                            // Untuk Admin OPD/UPT: selalu enabled karena satker sudah auto-set
-                            : false
-                        }
-                      />
-                    </Col>
-                    <Col xs={24} sm={6}>
-                      <Button
-                        icon={<ReloadOutlined />}
-                        onClick={fetchBulananData}
-                        loading={bulananLoading}
-                        style={{ width: '100%' }}
-                      >
-                        Refresh Data
-                      </Button>
-                    </Col>
-                  </Row>
-                  <Row style={{ marginTop: 8 }}>
-                    <Col span={24}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        💡 Export akan menggunakan filter bulan/tahun dan satker/bidang yang sedang aktif di atas
-                      </Text>
-                    </Col>
-                  </Row>
-                </Card>
-
-                {/* Bulanan Table */}
-                <Table
-                  columns={bulananColumns}
-                  dataSource={bulananData?.dailyBreakdown || []}
-                  rowKey="date"
-                  loading={bulananLoading}
-                  pagination={false}
-                  scroll={{ x: 600 }}
-                  size="middle"
-                />
-              </TabPane>
-            </Tabs>
+            {/* Harian Table */}
+            <Table
+              columns={harianColumns}
+              dataSource={harianData}
+              rowKey={(record) => `${record.pegawai.nip}-${record.absen_tgl}`}
+              loading={harianLoading}
+              pagination={{
+                ...harianPagination,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} dari ${total} data`,
+              }}
+              onChange={handleHarianTableChange}
+              scroll={{ x: 900 }}
+              size="middle"
+            />
           </Card>
         </Col>
       </Row>

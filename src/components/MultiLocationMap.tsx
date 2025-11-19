@@ -53,8 +53,17 @@ const MultiLocationMap: React.FC<MultiLocationMapProps> = ({
 
     loader.load().then(async () => {
       if (mapRef.current && !map) {
+        // Validate center coordinates
+        const centerLat = Number(center[0]);
+        const centerLng = Number(center[1]);
+        
+        if (isNaN(centerLat) || isNaN(centerLng)) {
+          console.error('Invalid center coordinates:', center);
+          return;
+        }
+
         const newMap = new google.maps.Map(mapRef.current, {
-          center: { lat: center[0], lng: center[1] },
+          center: { lat: centerLat, lng: centerLng },
           zoom: zoom,
           mapTypeControl: false,
           streetViewControl: false,
@@ -106,9 +115,19 @@ const MultiLocationMap: React.FC<MultiLocationMapProps> = ({
 
     // Create markers and circles for each location
     locations.forEach((location, index) => {
+      // Validate and convert lat/lng to numbers
+      const lat = Number(location.lat);
+      const lng = Number(location.lng);
+      
+      // Skip if lat or lng is invalid
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn(`Invalid location data for ${location.ket}: lat=${location.lat}, lng=${location.lng}`);
+        return;
+      }
+
       // Create marker
       const marker = new google.maps.Marker({
-        position: { lat: location.lat, lng: location.lng },
+        position: { lat: lat, lng: lng },
         map: map,
         title: location.ket,
         label: {
@@ -139,8 +158,8 @@ const MultiLocationMap: React.FC<MultiLocationMapProps> = ({
         fillColor: index === 0 ? "#1890ff" : "#52c41a",
         fillOpacity: 0.15,
         map: map,
-        center: { lat: location.lat, lng: location.lng },
-        radius: location.range,
+        center: { lat: lat, lng: lng },
+        radius: Number(location.range) || 100,
       });
 
       newCircles.push(circle);

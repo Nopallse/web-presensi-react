@@ -20,7 +20,7 @@ import LokasiEdit from '../features/lokasi/pages/LokasiEdit';
 
 // Kegiatan
 import { KegiatanPage, KegiatanDetail, KegiatanCreate, KegiatanEdit } from '../features/kegiatan';
-import SatkerDetail from '../features/kegiatan/pages/SatkerDetail';
+import GrupDetail from '../features/kegiatan/pages/GrupDetail';
 
 // Unit Kerja
 import { UnitKerjaPage } from '../features/unit-kerja';
@@ -254,10 +254,10 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
-          path="/kegiatan/:id/satker/:satkerId"
+          path="/kegiatan/:id/grup/:grupId"
           element={
             <ProtectedRoute>
-              <SatkerDetail />
+              <GrupDetail />
             </ProtectedRoute>
           }
         />

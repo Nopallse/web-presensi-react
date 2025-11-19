@@ -114,6 +114,9 @@ const BidangDetailPage: React.FC = () => {
     }
   };
 
+  const effectiveLocation = bidang?.lokasi || satker?.lokasi || null;
+  const isInheritedLocation = Boolean(!bidang?.lokasi && satker?.lokasi);
+
   const columns: ColumnsType<SubBidang> = [
     {
       title: 'No',
@@ -377,7 +380,7 @@ const BidangDetailPage: React.FC = () => {
 
               {/* Informasi Lokasi - Di Bawah */}
               <div>
-              {bidang.lokasi ? (
+              {effectiveLocation ? (
                 <div>
                   {/* Map - Lebih Besar */}
                   <React.Suspense 
@@ -396,13 +399,13 @@ const BidangDetailPage: React.FC = () => {
                     }
                   >
                     <GoogleMap
-                      center={[bidang.lokasi.lat, bidang.lokasi.lng]}
+                      center={[effectiveLocation.lat, effectiveLocation.lng]}
                       zoom={16}
                       height="400px"
                       selectedLocation={{
-                        lat: bidang.lokasi.lat,
-                        lng: bidang.lokasi.lng,
-                        range: bidang.lokasi.range
+                        lat: effectiveLocation.lat,
+                        lng: effectiveLocation.lng,
+                        range: effectiveLocation.range
                       }}
                     />
                   </React.Suspense>
@@ -419,24 +422,29 @@ const BidangDetailPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                       <EnvironmentOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
                       <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
-                        {bidang.lokasi.id_bidang ? 'Lokasi Bidang' : 'Lokasi Satker'}
+                        {effectiveLocation.id_bidang ? 'Lokasi Bidang' : 'Lokasi Satker'}
                       </Text>
                       <Tag 
-                        color={bidang.lokasi.id_bidang ? 'green' : 'blue'} 
+                        color={effectiveLocation.id_bidang ? 'green' : 'blue'} 
                         style={{ fontSize: '11px', fontWeight: 'bold' }}
                       >
-                        {bidang.lokasi.id_bidang ? 'Bidang' : 'Satker'}
+                        {effectiveLocation.id_bidang ? 'Bidang' : 'Satker'}
                       </Tag>
                     </div>
+                    {isInheritedLocation && (
+                      <Text type="secondary" style={{ display: 'block', marginBottom: '12px' }}>
+                        Lokasi Satker ditampilkan karena Bidang belum memiliki lokasi tersendiri.
+                      </Text>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <Text style={{ fontSize: '14px', color: '#666', lineHeight: '1.5' }}>
-                        {bidang.lokasi.ket || 'Lokasi tersedia'}
+                        {effectiveLocation.ket || 'Lokasi tersedia'}
                       </Text>
                       <Tag 
-                        color={bidang.lokasi.status ? 'green' : 'red'} 
+                        color={effectiveLocation.status ? 'green' : 'red'} 
                         style={{ fontSize: '10px' }}
                       >
-                        {bidang.lokasi.status ? 'Aktif' : 'Non-Aktif'}
+                        {effectiveLocation.status ? 'Aktif' : 'Non-Aktif'}
                       </Tag>
                     </div>
                   </div>
@@ -445,16 +453,16 @@ const BidangDetailPage: React.FC = () => {
                   <Descriptions bordered size="small" column={2} style={{ marginBottom: 20 }}>
                     <Descriptions.Item label="Koordinat GPS">
                       <Text code style={{ fontSize: 12 }}>
-                        {bidang.lokasi.lat.toFixed(6)}, {bidang.lokasi.lng.toFixed(6)}
+                        {effectiveLocation.lat.toFixed(6)}, {effectiveLocation.lng.toFixed(6)}
                       </Text>
                     </Descriptions.Item>
                     <Descriptions.Item label="Radius Jangkauan">
-                      <Text>{bidang.lokasi.range} meter</Text>
+                      <Text>{effectiveLocation.range} meter</Text>
                     </Descriptions.Item>
                   </Descriptions>
 
                   {/* Alamat - Jika Ada */}
-                  {bidang.lokasi.alamat && (
+                  {effectiveLocation.alamat && (
                     <div style={{ 
                       marginBottom: '20px', 
                       padding: '16px', 
@@ -466,7 +474,7 @@ const BidangDetailPage: React.FC = () => {
                         <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>Alamat Lengkap</Text>
                       </div>
                       <Text style={{ fontSize: '14px', lineHeight: '1.5', color: '#333' }}>
-                        {bidang.lokasi.alamat}
+                        {effectiveLocation.alamat}
                       </Text>
                     </div>
                   )}
@@ -476,7 +484,7 @@ const BidangDetailPage: React.FC = () => {
                     <Button 
                       type="primary" 
                       icon={<EnvironmentOutlined />}
-                      href={`https://www.google.com/maps?q=${bidang.lokasi.lat},${bidang.lokasi.lng}`}
+                      href={`https://www.google.com/maps?q=${effectiveLocation.lat},${effectiveLocation.lng}`}
                       target="_blank"
                       block
                       size="large"
@@ -484,7 +492,7 @@ const BidangDetailPage: React.FC = () => {
                     >
                       Lihat di Google Maps
                     </Button>
-                    {bidang.lokasi.id_bidang ? (
+                    {bidang.lokasi ? (
                       bidang.lokasi.status ? (
                         <Button 
                           icon={<EditOutlined />}

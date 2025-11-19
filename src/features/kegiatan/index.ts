@@ -6,6 +6,9 @@ export { default as KegiatanEdit } from './pages/KegiatanEdit';
 
 // Components
 export { default as KegiatanForm } from './components/KegiatanForm';
+export { default as GrupPesertaModal } from './components/GrupPesertaModal';
+export { default as ManagePesertaModal } from './components/ManagePesertaModal';
+export { default as ImportPesertaModal } from './components/ImportPesertaModal';
 
 // Services
 export { kegiatanApi } from './services/kegiatanApi';
@@ -20,10 +23,22 @@ export type {
   CreateJadwalKegiatanRequest,
   UpdateJadwalKegiatanRequest,
   LokasiKegiatan,
-  JenisKegiatan
+  JenisKegiatan,
+  GrupPesertaKegiatan,
+  PesertaGrupKegiatan,
+  GrupPesertaListResponse,
+  GrupPesertaDetailResponse,
+  PesertaGrupResponse,
+  CreateGrupPesertaRequest,
+  UpdateGrupPesertaRequest,
+  AddPesertaToGrupRequest,
+  RemovePesertaFromGrupRequest,
+  JenisGrup
 } from './types';
 
 export { 
   JENIS_KEGIATAN, 
-  JENIS_KEGIATAN_OPTIONS 
+  JENIS_KEGIATAN_OPTIONS,
+  JENIS_GRUP,
+  JENIS_GRUP_OPTIONS
 } from './types';

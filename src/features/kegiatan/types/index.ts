@@ -22,7 +22,8 @@ export interface LokasiKegiatan {
 }
 
 export interface LokasiWithSatker extends LokasiKegiatan {
-  satker_list: string[];
+  satker_list: string[]; // Satker yang ditambahkan per-OPD (nip null)
+  nip_list?: string[]; // NIP individu yang ditambahkan (opsional)
 }
 
 export interface JadwalKegiatanListResponse {
@@ -116,4 +117,96 @@ export const INCLUDE_ABSEN_OPTIONS = [
   { value: INCLUDE_ABSEN.PAGI, label: 'Menggantikan absen pagi' },
   { value: INCLUDE_ABSEN.SORE, label: 'Menggantikan absen sore' },
   { value: INCLUDE_ABSEN.KEDUANYA, label: 'Menggantikan absen pagi dan sore' },
+];
+
+// Grup Peserta Kegiatan Types
+export interface GrupPesertaKegiatan {
+  id_grup_peserta: number;
+  id_kegiatan: number;
+  lokasi_id: number;
+  nama_grup: string;
+  jenis_grup: 'opd' | 'khusus';
+  id_satker?: string;
+  keterangan?: string;
+  created_at: string;
+  updated_at: string;
+  total_peserta?: number;
+  Lokasi?: LokasiKegiatan;
+  MasterJadwalKegiatan?: JadwalKegiatan;
+}
+
+export interface PesertaGrupKegiatan {
+  id: number;
+  id_grup_peserta: number;
+  nip: string;
+  created_at: string;
+  NM_UNIT_KERJA?: string | null;
+  KDSATKER?: string | null;
+  BIDANGF?: string | null;
+  SUBF?: string | null;
+  nama_jabatan?: string | null;
+  pegawai?: {
+    nip: string;
+    nama: string;
+    nama_lengkap: string;
+    kdsatker: string;
+  };
+}
+
+export interface GrupPesertaListResponse {
+  success: boolean;
+  data: GrupPesertaKegiatan[];
+  total: number;
+}
+
+export interface GrupPesertaDetailResponse {
+  success: boolean;
+  data: GrupPesertaKegiatan;
+}
+
+export interface PesertaGrupResponse {
+  success: boolean;
+  data: {
+    grup: {
+      id_grup_peserta: number;
+      nama_grup: string;
+      jenis_grup: string;
+    };
+    peserta: PesertaGrupKegiatan[];
+    total: number;
+  };
+}
+
+export interface CreateGrupPesertaRequest {
+  nama_grup: string;
+  jenis_grup: 'opd' | 'khusus';
+  id_satker?: string;
+  keterangan?: string;
+}
+
+export interface UpdateGrupPesertaRequest {
+  nama_grup?: string;
+  keterangan?: string;
+}
+
+export interface AddPesertaToGrupRequest {
+  nip_list?: string[];
+  bulk_from_satker?: boolean;
+}
+
+export interface RemovePesertaFromGrupRequest {
+  nip_list: string[];
+}
+
+// Jenis Grup constants
+export const JENIS_GRUP = {
+  OPD: 'opd',
+  KHUSUS: 'khusus'
+} as const;
+
+export type JenisGrup = typeof JENIS_GRUP[keyof typeof JENIS_GRUP];
+
+export const JENIS_GRUP_OPTIONS = [
+  { value: JENIS_GRUP.OPD, label: 'Grup OPD' },
+  { value: JENIS_GRUP.KHUSUS, label: 'Grup Khusus' }
 ];
