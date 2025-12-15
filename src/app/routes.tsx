@@ -151,41 +151,6 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        
-        {/* Unit Kerja V2 routes */}
-        <Route
-          path="/unit-kerja-v2"
-          element={
-            <ProtectedRoute>
-              <UnitKerjaV2Page />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/unit-kerja-v2/:idSatker"
-          element={
-            <ProtectedRoute>
-              <SatkerDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/unit-kerja-v2/:idSatker/:idBidang"
-          element={
-            <ProtectedRoute>
-              <BidangDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/unit-kerja-v2/:idSatker/:idBidang/:idSubBidang"
-          element={
-            <ProtectedRoute>
-              <SubBidangDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        
         {/* Lokasi routes */}
         <Route
           path="/lokasi"
