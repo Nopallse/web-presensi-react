@@ -26,13 +26,6 @@ import GrupDetail from '../features/kegiatan/pages/GrupDetail';
 import { UnitKerjaPage } from '../features/unit-kerja';
 import UnitKerjaDetail from '../features/unit-kerja/pages/UnitKerjaDetail';
 
-// Unit Kerja V2
-import UnitKerjaV2Page from '../features/unit-kerja/pages/UnitKerjaV2Page';
-import SatkerDetailPage from '../features/unit-kerja/pages/SatkerDetailPage';
-import BidangDetailPage from '../features/unit-kerja/pages/BidangDetailPage';
-import SubBidangDetailPage from '../features/unit-kerja/pages/SubBidangDetailPage';
-
-
 // Jam Dinas
 import { JamDinasPage, JamDinasForm } from '../features/jam-dinas';
 const JamDinasDetail = React.lazy(() => import('../features/jam-dinas/pages/JamDinasDetail'));
