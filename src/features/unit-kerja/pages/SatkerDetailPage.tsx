@@ -95,7 +95,7 @@ const SatkerDetailPage: React.FC = () => {
   };
 
   const handleViewBidangDetail = (bidang: Bidang) => {
-    navigate(`/unit-kerja-v2/${idSatker}/${bidang.BIDANGF}`);
+    navigate(`/unit-kerja/${idSatker}/${bidang.BIDANGF}`);
   };
 
   const handleLocationModalSuccess = () => {
@@ -281,7 +281,7 @@ const SatkerDetailPage: React.FC = () => {
             <Button 
               type="primary"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/unit-kerja-v2')}
+              onClick={() => navigate('/unit-kerja')}
             >
               Kembali ke Daftar Satker
             </Button>
@@ -298,7 +298,7 @@ const SatkerDetailPage: React.FC = () => {
         items={[
           {
             title: satker.NMSATKER,
-            path: `/unit-kerja-v2/${idSatker}`,
+            path: `/unit-kerja/${idSatker}`,
             icon: <BankOutlined />
           }
         ]} 
@@ -320,7 +320,7 @@ const SatkerDetailPage: React.FC = () => {
           <Space>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/unit-kerja-v2')}
+              onClick={() => navigate('/unit-kerja')}
             >
               Kembali
             </Button>

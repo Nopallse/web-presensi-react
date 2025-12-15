@@ -24,7 +24,11 @@ import GrupDetail from '../features/kegiatan/pages/GrupDetail';
 
 // Unit Kerja
 import { UnitKerjaPage } from '../features/unit-kerja';
-import UnitKerjaDetail from '../features/unit-kerja/pages/UnitKerjaDetail';
+
+import SatkerDetailPage from '../features/unit-kerja/pages/SatkerDetailPage';
+import BidangDetailPage from '../features/unit-kerja/pages/BidangDetailPage';
+import SubBidangDetailPage from '../features/unit-kerja/pages/SubBidangDetailPage';
+
 
 // Jam Dinas
 import { JamDinasPage, JamDinasForm } from '../features/jam-dinas';
@@ -118,14 +122,7 @@ const AppRoutes: React.FC = () => {
           }
         />
 
-        <Route
-          path="/skpd/:id"
-          element={
-            <ProtectedRoute>
-              <div>SKPD Detail Page (Coming Soon)</div>
-            </ProtectedRoute>
-          }
-        />
+  
         
         {/* Unit Kerja routes */}
         <Route
@@ -136,14 +133,32 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+     
         <Route
-          path="/unit-kerja/:kd_unit_kerja"
+          path="/unit-kerja/:idSatker"
           element={
             <ProtectedRoute>
-              <UnitKerjaDetail />
+              <SatkerDetailPage />
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/unit-kerja/:idSatker/:idBidang"
+          element={
+            <ProtectedRoute>
+              <BidangDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/unit-kerja/:idSatker/:idBidang/:idSubBidang"
+          element={
+            <ProtectedRoute>
+              <SubBidangDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        
         {/* Lokasi routes */}
         <Route
           path="/lokasi"

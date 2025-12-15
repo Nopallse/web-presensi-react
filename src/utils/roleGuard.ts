@@ -25,7 +25,7 @@ export const roleGuard = {
         'pegawai',
         'skpd',
         'unit-kerja',
-        'unit-kerja-v2',
+        'unit-kerja',
         'lokasi',
         'kegiatan',
         'presensi',
@@ -37,7 +37,7 @@ export const roleGuard = {
         'pegawai',
         'skpd',
         'unit-kerja',
-        'unit-kerja-v2',
+        'unit-kerja',
         'lokasi',
         'presensi',
         'device-reset'
@@ -62,7 +62,7 @@ export const roleGuard = {
         { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
         // { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
-        { label: 'Unit Kerja', path: '/unit-kerja-v2', icon: 'Sitemap' },
+        { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
         {
           label: 'Kegiatan',
           icon: 'Calendar',
@@ -82,7 +82,6 @@ export const roleGuard = {
         { label: 'Pegawai', path: '/pegawai', icon: 'Users' },
         { label: 'SKPD', path: '/skpd', icon: 'Building' },
         { label: 'Unit Kerja', path: '/unit-kerja', icon: 'Sitemap' },
-        { label: 'Unit Kerja V2', path: '/unit-kerja-v2', icon: 'Building' },
         { label: 'Lokasi', path: '/lokasi', icon: 'MapPin' },
         { label: 'Presensi', path: '/presensi', icon: 'Clock' },
         { label: 'Reset Device', path: '/device-reset', icon: 'Mobile' }

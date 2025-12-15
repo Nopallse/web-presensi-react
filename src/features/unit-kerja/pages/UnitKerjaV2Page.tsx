@@ -69,7 +69,7 @@ const UnitKerjaV2Page: React.FC = () => {
   };
 
   const handleViewDetail = (satker: Satker) => {
-    navigate(`/unit-kerja-v2/${satker.KDSATKER}`);
+    navigate(`/unit-kerja/${satker.KDSATKER}`);
   };
 
   const columns: ColumnsType<Satker> = [

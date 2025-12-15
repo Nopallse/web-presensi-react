@@ -102,7 +102,7 @@ const SubBidangDetailPage: React.FC = () => {
             <Button 
               type="primary"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/unit-kerja-v2')}
+              onClick={() => navigate('/unit-kerja')}
             >
               Kembali ke Daftar Satker
             </Button>
@@ -119,17 +119,17 @@ const SubBidangDetailPage: React.FC = () => {
         items={[
           {
             title: satker.NMSATKER,
-            path: `/unit-kerja-v2/${idSatker}`,
+            path: `/unit-kerja/${idSatker}`,
             icon: <BankOutlined />
           },
           {
             title: bidang.NMBIDANG || 'Bidang',
-            path: `/unit-kerja-v2/${idSatker}/${idBidang}`,
+            path: `/unit-kerja/${idSatker}/${idBidang}`,
             icon: <ApartmentOutlined />
           },
           {
             title: subBidang.NMSUB || 'Sub Bidang',
-            path: `/unit-kerja-v2/${idSatker}/${idBidang}/${idSubBidang}`,
+            path: `/unit-kerja/${idSatker}/${idBidang}/${idSubBidang}`,
             icon: <TeamOutlined />
           }
         ]} 
@@ -151,7 +151,7 @@ const SubBidangDetailPage: React.FC = () => {
           <Space>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/unit-kerja-v2/${idSatker}/${idBidang}`)}
+              onClick={() => navigate(`/unit-kerja/${idSatker}/${idBidang}`)}
             >
               Kembali ke Bidang
             </Button>

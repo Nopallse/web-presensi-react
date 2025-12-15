@@ -27,7 +27,7 @@ const UnitKerjaBreadcrumb: React.FC<UnitKerjaBreadcrumbProps> = ({ items }) => {
       title: (
         <span 
           style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-          onClick={() => handleBreadcrumbClick('/unit-kerja-v2')}
+          onClick={() => handleBreadcrumbClick('/unit-kerja')}
         >
           <HomeOutlined />
           Unit Kerja V2

@@ -92,7 +92,7 @@ const BidangDetailPage: React.FC = () => {
   };
 
   const handleViewSubBidangDetail = (subBidang: SubBidang) => {
-    navigate(`/unit-kerja-v2/${idSatker}/${idBidang}/${subBidang.SUBF}`);
+    navigate(`/unit-kerja/${idSatker}/${idBidang}/${subBidang.SUBF}`);
   };
 
   const handleLocationModalSuccess = () => {
@@ -291,7 +291,7 @@ const BidangDetailPage: React.FC = () => {
             <Button 
               type="primary"
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/unit-kerja-v2')}
+              onClick={() => navigate('/unit-kerja')}
             >
               Kembali ke Daftar Satker
             </Button>
@@ -308,12 +308,12 @@ const BidangDetailPage: React.FC = () => {
         items={[
           {
             title: satker.NMSATKER,
-            path: `/unit-kerja-v2/${idSatker}`,
+            path: `/unit-kerja/${idSatker}`,
             icon: <BankOutlined />
           },
           {
             title: bidang.NMBIDANG || 'Bidang',
-            path: `/unit-kerja-v2/${idSatker}/${idBidang}`,
+            path: `/unit-kerja/${idSatker}/${idBidang}`,
             icon: <ApartmentOutlined />
           }
         ]} 
@@ -335,7 +335,7 @@ const BidangDetailPage: React.FC = () => {
           <Space>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/unit-kerja-v2/${idSatker}`)}
+              onClick={() => navigate(`/unit-kerja/${idSatker}`)}
             >
               Kembali ke Satker
             </Button>
