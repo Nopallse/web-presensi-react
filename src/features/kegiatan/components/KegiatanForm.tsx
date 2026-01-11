@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Input, DatePicker, Select, Row, Col, TimePicker } from 'antd';
+import { Form, Input, DatePicker, Select, Row, Col, TimePicker, InputNumber } from 'antd';
 import dayjs from 'dayjs';
 import type { JadwalKegiatanFormData } from '../types';
 import { JENIS_KEGIATAN_OPTIONS, INCLUDE_ABSEN_OPTIONS } from '../types';
@@ -175,7 +175,19 @@ const KegiatanForm: React.FC<KegiatanFormProps> = ({
           </Form.Item>
         </Col>
         <Col span={12}>
-          {/* Empty column for layout balance */}
+          <Form.Item
+            name="dispensasi_keterlambatan"
+            label="Dispensasi Keterlambatan (Menit)"
+            tooltip="Waktu dispensasi keterlambatan dalam menit. Kosongkan jika tidak ada dispensasi."
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              size="large"
+              min={0}
+              max={180}
+              placeholder="Contoh: 15"
+            />
+          </Form.Item>
         </Col>
       </Row>
 

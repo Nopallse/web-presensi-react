@@ -467,7 +467,7 @@ const KegiatanDetail: React.FC = () => {
             <Col xs={24} sm={12} md={8}>
                     <div>
                 <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                        Jam Kegiatan
+                        Jam Presensi Kegiatan
                       </Text>
                 <Text strong style={{ fontSize: '15px', color: '#1890ff' }}>
                         {kegiatan.jam_mulai && kegiatan.jam_selesai 
@@ -479,6 +479,11 @@ const KegiatanDetail: React.FC = () => {
                               : 'Tidak ditentukan'
                         }
                       </Text>
+                      {(kegiatan.dispensasi_keterlambatan !== null && kegiatan.dispensasi_keterlambatan !== undefined) && (
+                        <div style={{ marginTop: '4px' }}>
+                          <Tag color="orange">Dispensasi: {kegiatan.dispensasi_keterlambatan} menit</Tag>
+                        </div>
+                      )}
                     </div>
                   </Col>
             <Col xs={24} sm={12} md={8}>

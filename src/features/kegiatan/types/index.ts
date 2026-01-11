@@ -6,6 +6,7 @@ export interface JadwalKegiatan {
   jam_mulai?: string;
   jam_selesai?: string;
   include_absen?: string;
+  dispensasi_keterlambatan?: number | null;
   createdAt?: string;
   updatedAt?: string;
   lokasi_list?: LokasiWithSatker[];
@@ -57,6 +58,7 @@ export interface CreateJadwalKegiatanRequest {
   jam_mulai?: string;
   jam_selesai?: string;
   include_absen?: string;
+  dispensasi_keterlambatan?: number | null;
 }
 
 export interface UpdateJadwalKegiatanRequest extends Partial<CreateJadwalKegiatanRequest> {
@@ -70,6 +72,7 @@ export interface JadwalKegiatanFormData {
   jam_mulai?: string;
   jam_selesai?: string;
   include_absen?: string;
+  dispensasi_keterlambatan?: number | null;
 }
 
 export interface ApiResponse<T = any> {

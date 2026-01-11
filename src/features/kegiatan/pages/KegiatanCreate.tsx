@@ -25,7 +25,8 @@ const KegiatanCreate: React.FC = () => {
         keterangan: values.keterangan,
         jam_mulai: values.jam_mulai ? dayjs(values.jam_mulai).format('HH:mm:ss') : undefined,
         jam_selesai: values.jam_selesai ? dayjs(values.jam_selesai).format('HH:mm:ss') : undefined,
-        include_absen: values.include_absen || 'none'
+        include_absen: values.include_absen || 'none',
+        dispensasi_keterlambatan: values.dispensasi_keterlambatan !== undefined ? values.dispensasi_keterlambatan : null
       };
 
       const response = await kegiatanApi.create(formData);
